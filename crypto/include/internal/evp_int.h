@@ -179,6 +179,9 @@ extern const EVP_KDF sshkdf_kdf_meth;
 extern const EVP_KDF ss_kdf_meth;
 extern const EVP_KDF x963_kdf_meth;
 extern const EVP_KDF x942_kdf_meth;
+extern const EVP_KDF argon2i_kdf_meth;
+extern const EVP_KDF argon2d_kdf_meth;
+extern const EVP_KDF argon2id_kdf_meth;
 
 struct evp_md_st {
     /* nid */
