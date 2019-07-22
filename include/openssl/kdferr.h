@@ -33,6 +33,10 @@ int ERR_load_KDF_strings(void);
 #  define KDF_F_KDF_PBKDF2_CTRL_STR                        0
 #  define KDF_F_KDF_PBKDF2_DERIVE                          0
 #  define KDF_F_KDF_PBKDF2_NEW                             0
+#  define KDF_F_KDF_ARGON2_CTRL                            0
+#  define KDF_F_KDF_ARGON2_DERIVE                          0
+#  define KDF_F_KDF_ARGON2_NEW                             0
+#  define KDF_F_KDF_ARGON2_CTRL_STR                        0
 #  define KDF_F_KDF_SCRYPT_CTRL_STR                        0
 #  define KDF_F_KDF_SCRYPT_CTRL_UINT32                     0
 #  define KDF_F_KDF_SCRYPT_CTRL_UINT64                     0

@@ -130,6 +130,37 @@ static int test_kdf_pbkdf2(void)
     return ret;
 }
 
+#ifndef OPENSSL_NO_ARGON2
+static int test_kdf_argon2(void)
+{
+    int ret;
+    EVP_KDF_CTX *kctx;
+    unsigned char out[64];
+    static const unsigned char expected[sizeof(out)] = {
+	0x5a, 0xc9, 0x0c, 0x8f, 0x1c, 0xe8, 0x1a, 0xda,
+	0x8d, 0x9d, 0xa8, 0xbc, 0xe9, 0xbf, 0x3f, 0xbb,
+	0xbb, 0x42, 0x30, 0x75, 0xbb, 0xc4, 0x79, 0x62,
+	0x4d, 0xab, 0xd8, 0xaf, 0x8b, 0xa1, 0x5a, 0x15,
+	0x6e, 0x42, 0x78, 0xa9, 0x7c, 0x5e, 0xd6, 0xdc,
+	0x4e, 0x00, 0x8e, 0xff, 0xf1, 0x02, 0x59, 0x07,
+	0x7c, 0xe9, 0xdd, 0x01, 0x48, 0xdf, 0x9f, 0x16,
+	0x6b, 0x30, 0x7f, 0xb6, 0x56, 0x0c, 0x4c, 0xbf
+    };
+
+    ret =
+        TEST_ptr(kctx = EVP_KDF_CTX_new_id(EVP_KDF_ARGON2D))
+        && TEST_int_gt(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, "1234567890\n",
+                                    (size_t)11), 0)
+        && TEST_int_gt(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, "saltsalt",
+                                    (size_t)8), 0)
+        && TEST_int_eq(EVP_KDF_derive(kctx, out, sizeof(out)), 1)
+        && TEST_mem_eq(out, sizeof(out), expected, sizeof(expected));
+
+    EVP_KDF_CTX_free(kctx);
+    return ret;
+}
+#endif /* OPENSSL_NO_ARGON2 */
+
 #ifndef OPENSSL_NO_SCRYPT
 static int test_kdf_scrypt(void)
 {
@@ -446,6 +477,9 @@ int setup_tests(void)
     ADD_TEST(test_kdf_pbkdf2);
 #ifndef OPENSSL_NO_SCRYPT
     ADD_TEST(test_kdf_scrypt);
+#endif
+#ifndef OPENSSL_NO_ARGON2
+    ADD_TEST(test_kdf_argon2);
 #endif
     ADD_TEST(test_kdf_ss_hash);
     ADD_TEST(test_kdf_ss_hmac);

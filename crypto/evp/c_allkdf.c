@@ -24,4 +24,9 @@ void openssl_add_all_kdfs_int(void)
 #ifndef OPENSSL_NO_CMS
     EVP_add_kdf(&x942_kdf_meth);
 #endif
+#ifndef OPENSSL_NO_ARGON2
+    EVP_add_kdf(&argon2i_kdf_meth);
+    EVP_add_kdf(&argon2d_kdf_meth);
+    EVP_add_kdf(&argon2id_kdf_meth);
+#endif
 }

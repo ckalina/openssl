@@ -26,6 +26,9 @@ extern "C" {
 # define EVP_KDF_SS         NID_sskdf
 # define EVP_KDF_X963       NID_x963kdf
 # define EVP_KDF_X942       NID_x942kdf
+# define EVP_KDF_ARGON2I    NID_argon2i
+# define EVP_KDF_ARGON2D    NID_argon2d
+# define EVP_KDF_ARGON2ID    NID_argon2id
 
 EVP_KDF_CTX *EVP_KDF_CTX_new_id(int id);
 EVP_KDF_CTX *EVP_KDF_CTX_new(const EVP_KDF *kdf);
@@ -70,6 +73,13 @@ const EVP_KDF *EVP_get_kdfbyname(const char *name);
 # define EVP_KDF_CTRL_SET_UKM                0x17 /* unsigned char *, size_t */
 # define EVP_KDF_CTRL_SET_CEK_ALG            0x18 /* char * */
 # define EVP_KDF_CTRL_SET_SHARED_INFO        EVP_KDF_CTRL_SET_SSKDF_INFO
+# define EVP_KDF_CTRL_SET_ARGON2_LANES       0xf1 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_THREADS     0xf2 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_MEM_COST    0xf3 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_AD          0xf4 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_FLAGS       0xf5 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_SIZE        0xf6 /* uint32 */
+# define EVP_KDF_CTRL_SET_ARGON2_SECRET      0xf7 /* char * */
 
 # define EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND  0
 # define EVP_KDF_HKDF_MODE_EXTRACT_ONLY        1
