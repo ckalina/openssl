@@ -16,67 +16,67 @@
  */
 
 #ifndef ARGON2_H
-#define ARGON2_H
+# define ARGON2_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <limits.h>
+# include <stdint.h>
+# include <stddef.h>
+# include <limits.h>
 
-#include <openssl/crypto.h>
+# include <openssl/crypto.h>
 
 /*
  * Argon2 input parameter restrictions
  */
 
 /* Minimum and maximum number of lanes (degree of parallelism) */
-#define ARGON2_MIN_LANES UINT32_C(1)
-#define ARGON2_MAX_LANES UINT32_C(0xFFFFFF)
+# define ARGON2_MIN_LANES UINT32_C(1)
+# define ARGON2_MAX_LANES UINT32_C(0xFFFFFF)
 
 /* Minimum and maximum number of threads */
-#define ARGON2_MIN_THREADS UINT32_C(1)
-#define ARGON2_MAX_THREADS UINT32_C(0xFFFFFF)
+# define ARGON2_MIN_THREADS UINT32_C(1)
+# define ARGON2_MAX_THREADS UINT32_C(0xFFFFFF)
 
 /* Number of synchronization points between lanes per pass */
-#define ARGON2_SYNC_POINTS UINT32_C(4)
+# define ARGON2_SYNC_POINTS UINT32_C(4)
 
 /* Minimum and maximum digest size in bytes */
-#define ARGON2_MIN_OUTLEN UINT32_C(4)
-#define ARGON2_MAX_OUTLEN UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_OUTLEN UINT32_C(4)
+# define ARGON2_MAX_OUTLEN UINT32_C(0xFFFFFFFF)
 
 /* Minimum and maximum number of memory blocks (each of BLOCK_SIZE bytes) */
-#define ARGON2_MIN_MEMORY (2 * ARGON2_SYNC_POINTS) /* 2 blocks per slice */
+# define ARGON2_MIN_MEMORY (2 * ARGON2_SYNC_POINTS) /* 2 blocks per slice */
 
-#define ARGON2_MIN(a, b) ((a) < (b) ? (a) : (b))
+# define ARGON2_MIN(a, b) ((a) < (b) ? (a) : (b))
 /* Max memory size is addressing-space/2, topping at 2^32 blocks (4 TB) */
-#define ARGON2_MAX_MEMORY_BITS                                                 \
+# define ARGON2_MAX_MEMORY_BITS                                                 \
     ARGON2_MIN(UINT32_C(32), (sizeof(void *) * CHAR_BIT - 10 - 1))
-#define ARGON2_MAX_MEMORY                                                      \
+# define ARGON2_MAX_MEMORY                                                      \
     ARGON2_MIN(UINT32_C(0xFFFFFFFF), UINT64_C(1) << ARGON2_MAX_MEMORY_BITS)
 
 /* Minimum and maximum number of passes */
-#define ARGON2_MIN_TIME UINT32_C(1)
-#define ARGON2_MAX_TIME UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_TIME UINT32_C(1)
+# define ARGON2_MAX_TIME UINT32_C(0xFFFFFFFF)
 
 /* Minimum and maximum password length in bytes */
-#define ARGON2_MIN_PWD_LENGTH UINT32_C(0)
-#define ARGON2_MAX_PWD_LENGTH UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_PWD_LENGTH UINT32_C(0)
+# define ARGON2_MAX_PWD_LENGTH UINT32_C(0xFFFFFFFF)
 
 /* Minimum and maximum associated data length in bytes */
-#define ARGON2_MIN_AD_LENGTH UINT32_C(0)
-#define ARGON2_MAX_AD_LENGTH UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_AD_LENGTH UINT32_C(0)
+# define ARGON2_MAX_AD_LENGTH UINT32_C(0xFFFFFFFF)
 
 /* Minimum and maximum salt length in bytes */
-#define ARGON2_MIN_SALT_LENGTH UINT32_C(8)
-#define ARGON2_MAX_SALT_LENGTH UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_SALT_LENGTH UINT32_C(8)
+# define ARGON2_MAX_SALT_LENGTH UINT32_C(0xFFFFFFFF)
 
 /* Minimum and maximum key length in bytes */
-#define ARGON2_MIN_SECRET UINT32_C(0)
-#define ARGON2_MAX_SECRET UINT32_C(0xFFFFFFFF)
+# define ARGON2_MIN_SECRET UINT32_C(0)
+# define ARGON2_MAX_SECRET UINT32_C(0xFFFFFFFF)
 
 /* Flags to determine which fields are securely wiped (default = no wipe). */
-#define ARGON2_DEFAULT_FLAGS UINT32_C(0)
-#define ARGON2_FLAG_CLEAR_PASSWORD (UINT32_C(1) << 0)
-#define ARGON2_FLAG_CLEAR_SECRET (UINT32_C(1) << 1)
+# define ARGON2_DEFAULT_FLAGS UINT32_C(0)
+# define ARGON2_FLAG_CLEAR_PASSWORD (UINT32_C(1) << 0)
+# define ARGON2_FLAG_CLEAR_SECRET (UINT32_C(1) << 1)
 
 /* Error codes */
 typedef enum Argon2_ErrorCodes {

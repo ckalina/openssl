@@ -1,17 +1,17 @@
 
 #ifndef __BLAKE2B_H
-#define __BLAKE2B_H
+# define __BLAKE2B_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
 
-#include "core.h"
+# include "core.h"
 
-#include <openssl/evp.h>
-#include <openssl/objects.h>
-#include <openssl/crypto.h>
-#include <internal/blake2.h>
+# include <openssl/evp.h>
+# include <openssl/objects.h>
+# include <openssl/crypto.h>
+# include <internal/blake2.h>
 
 static ossl_inline uint32_t load32(const uint8_t *src)
 {
@@ -132,8 +132,8 @@ static inline uint64_t fBlaMka(uint64_t x, uint64_t y) {
     return x + y + 2 * xy;
 }
 
-#ifndef G
-#define G(a, b, c, d)                                                          \
+# ifndef G
+#  define G(a, b, c, d)                                                          \
     do {                                                                       \
         a = fBlaMka(a, b);                                                     \
         d = rotr64(d ^ a, 32);                                                 \
@@ -144,10 +144,10 @@ static inline uint64_t fBlaMka(uint64_t x, uint64_t y) {
         c = fBlaMka(c, d);                                                     \
         b = rotr64(b ^ c, 63);                                                 \
     } while ((void)0, 0)
-#endif
+# endif
 
-#ifndef BLAKE2_ROUND_NOMSG
-#define BLAKE2_ROUND_NOMSG(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11,   \
+# ifndef BLAKE2_ROUND_NOMSG
+#  define BLAKE2_ROUND_NOMSG(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11,   \
                            v12, v13, v14, v15)                                 \
     do {                                                                       \
         G(v0, v4, v8, v12);                                                    \
@@ -159,7 +159,7 @@ static inline uint64_t fBlaMka(uint64_t x, uint64_t y) {
         G(v2, v7, v8, v13);                                                    \
         G(v3, v4, v9, v14);                                                    \
     } while ((void)0, 0)
-#endif
+# endif
 
 int blake2b_nokey(void *out, size_t outlen, const void *in, size_t inlen);
 int blake2b(void *out, size_t outlen, const void *in, size_t inlen,
