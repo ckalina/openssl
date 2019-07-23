@@ -143,18 +143,8 @@ typedef enum Argon2_ErrorCodes {
 typedef int (*allocate_fptr)(uint8_t **memory, size_t bytes);
 typedef void (*deallocate_fptr)(uint8_t *memory, size_t bytes);
 
-static int ossl_alloc(uint8_t **memory, size_t bytes) {
-    if (!memory) return -1;
-    *memory = OPENSSL_zalloc(bytes);
-    return memory != NULL;
-}
-
-static void ossl_dealloc(uint8_t *memory, size_t bytes) {
-    if (bytes)
-	OPENSSL_clear_free(memory, bytes);
-    else
-	OPENSSL_free(memory);
-}
+int ossl_alloc(uint8_t **memory, size_t bytes);
+void ossl_dealloc(uint8_t *memory, size_t bytes);
 
 /* Argon2 primitive type */
 typedef enum Argon2_type {

@@ -27,6 +27,19 @@
 
 typedef struct argon2_param ARGON2_PARAM;
 
+int ossl_alloc(uint8_t **memory, size_t bytes) {
+	if (!memory) return -1;
+	*memory = OPENSSL_zalloc(bytes);
+	return memory != NULL;
+}
+
+void ossl_dealloc(uint8_t *memory, size_t bytes) {
+	if (bytes)
+		OPENSSL_clear_free(memory, bytes);
+	else
+		OPENSSL_free(memory);
+}
+
 int ARGON2_Init(ARGON2_CTX *c, argon2_type type) {
     c->out = NULL;
     c->outlen = 64;

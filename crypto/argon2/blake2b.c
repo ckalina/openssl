@@ -12,7 +12,7 @@ int blake2b_nokey(void *out, size_t outlen, const void *in, size_t inlen) {
     if(EVP_DigestUpdate(mdctx, in, inlen) != 1)
         goto fail;
 
-    if(EVP_DigestFinal_ex(mdctx, out, &outlen) != 1)
+    if(EVP_DigestFinal_ex(mdctx, out, (unsigned int *) &outlen) != 1)
         goto fail;
 
     if(NULL == out || outlen == 0 || outlen > BLAKE2B_OUTBYTES)
