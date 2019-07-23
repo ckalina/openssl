@@ -1,11 +1,35 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #include <openssl/evp.h>
+#include <openssl/kdf.h>
+#include <openssl/kdferr.h>
 #include <openssl/objects.h>
 #include <openssl/crypto.h>
-#include <openssl/argon2.h>
+#include <openssl/core_names.h>
+#include <openssl/obj_mac.h>
+
+# define ARGON2_MIN_LANES UINT32_C(1)
+# define ARGON2_MIN_THREADS UINT32_C(1)
+# define ARGON2_MIN_OUTLEN UINT32_C(4)
+# define ARGON2_MIN_MEMORY (2 * ARGON2_SYNC_POINTS) /* 2 blocks per slice */
+# define ARGON2_MIN(a, b) ((a) < (b) ? (a) : (b))
+# define ARGON2_MIN_TIME UINT32_C(1)
+# define ARGON2_MIN_PWD_LENGTH UINT32_C(0)
+# define ARGON2_MIN_AD_LENGTH UINT32_C(0)
+# define ARGON2_MIN_SALT_LENGTH UINT32_C(8)
+# define ARGON2_MIN_SECRET UINT32_C(0)
+
+static EVP_KDF_CTX *get_kdfbyname(const char *name)
+{
+    EVP_KDF *kdf = EVP_KDF_fetch(NULL, name, NULL);
+    EVP_KDF_CTX *kctx = EVP_KDF_CTX_new(kdf);
+
+    EVP_KDF_free(kdf);
+    return kctx;
+}
 
 static void print_hex(uint8_t *bytes, size_t bytes_len) {
 	size_t i;
@@ -15,76 +39,55 @@ static void print_hex(uint8_t *bytes, size_t bytes_len) {
 }
 
 int main(int argc, const char * argv[]) {
+	if (argc < 3) return 1;
 
 	uint8_t * in = (uint8_t*) argv[1];
 	uint32_t inlen = strlen(argv[1]);
 
-	/*char key_str[] = "this is a test";
-	uint8_t * key = (uint8_t*) &key_str;
-	uint32_t keylen = strlen(key_str);*/
+	uint8_t * salt = (uint8_t*) argv[2];
+	uint32_t saltlen = strlen(argv[2]);
 
-	char salt_str[] = "salty much;padding:w";
-	uint8_t * salt = (uint8_t*) &salt_str;
-	uint32_t saltlen = strlen(salt_str);
+	size_t outlen = atoi(argv[3]);
 
-	char out_str[65];
-	uint8_t * out = (uint8_t*) &out_str;
-	size_t outlen = 64;
+	if (saltlen < ARGON2_MIN_SALT_LENGTH) return 2;
+	if (outlen  < ARGON2_MIN_OUTLEN)      return 3;
 
-#ifdef ARGON2D
-	const EVP_MAC *mac = EVP_get_macbynid(EVP_MAC_ARGON2D);
-#endif
+	uint8_t * out = malloc(outlen+1);
 
-#ifdef ARGON2I
-	const EVP_MAC *mac = EVP_get_macbynid(EVP_MAC_ARGON2I);
-#endif
+	#ifdef ARGON2I
+	EVP_KDF_CTX *ctx = get_kdfbyname(SN_argon2i);
+	#endif
+	#ifdef ARGON2D
+	EVP_KDF_CTX *ctx = get_kdfbyname(SN_argon2d);
+	#endif
+	#ifdef ARGON2ID
+	EVP_KDF_CTX *ctx = get_kdfbyname(SN_argon2id);
+	#endif
 
-#ifdef ARGON2ID
-	const EVP_MAC *mac = EVP_get_macbynid(EVP_MAC_ARGON2ID);
-#endif
-
-	EVP_MAC_CTX *ctx = NULL;
-
-	if((ctx = EVP_MAC_CTX_new(mac)) == NULL) {
-		fprintf(stderr, "EVP_MAC_CTX_new failed\n");
-		goto fail;
+	if (ctx == NULL) {
+		fprintf(stderr, "EVP_KDF_CTX_new failed.\n");
+		return 1;
 	}
 
-	/*if (keylen > 0) {
-		if (EVP_MAC_ctrl(ctx, EVP_MAC_CTRL_SET_KEY, key, keylen) <= 0) {
-			fprintf(stderr, "EVP_MAC_ctrl failed\n");
-			goto fail;
-		}
-	}*/
-		if (EVP_MAC_ctrl(ctx, EVP_MAC_CTRL_SET_SALT, salt, saltlen)<=0){
-			fprintf(stderr, "EVP_MAC_ctrl failed\n");
-			goto fail;
-		}
-		if (EVP_MAC_ctrl(ctx, EVP_MAC_CTRL_SET_SIZE, outlen) <= 0) {
-			fprintf(stderr, "EVP_MAC_ctrl failed\n");
-			goto fail;
-		}
+	OSSL_PARAM params[3], *p = params;
+	*p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_PASSWORD, in, inlen);
+	*p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, salt, saltlen);
+	*p = OSSL_PARAM_construct_end();
 
-	if (!EVP_MAC_init(ctx)) {
-		fprintf(stderr, "init failed\n");
-		goto fail;
+        if (EVP_KDF_CTX_set_params(ctx, params) != 1) {
+		fprintf(stderr, "Unable to set param via ctrl.\n");
+		return 1;
 	}
 
-	if (EVP_MAC_update(ctx, in, inlen) != ARGON2_OK) {
-		fprintf(stderr, "update failed\n");
-		goto fail;
+	if (EVP_KDF_derive(ctx, out, outlen) != 1) {
+		fprintf(stderr, "Error occured during derive.");
+		return 1;
 	}
 
-	if (!EVP_MAC_final(ctx, out, &outlen)) {
-		fprintf(stderr, "final failed\n");
-		goto fail;
-	}
-
-	printf("Outlen: %ld\n", outlen);
 	print_hex(out, outlen);
 
-	return 0;
+	EVP_KDF_CTX_free(ctx);
+	free(out);
 
-fail:
-	return 1;
+	return 0;
 }

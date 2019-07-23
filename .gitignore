@@ -1,0 +1,7 @@
+test-impl.out
+.*.swo
+.*.swp
+argon2-ref
+main
+main-blake
+log
