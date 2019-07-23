@@ -133,7 +133,7 @@ static inline uint64_t fBlaMka(uint64_t x, uint64_t y) {
 }
 
 # ifndef G
-#  define G(a, b, c, d)                                                          \
+#  define G(a, b, c, d)                                                        \
     do {                                                                       \
         a = fBlaMka(a, b);                                                     \
         d = rotr64(d ^ a, 32);                                                 \
@@ -147,7 +147,7 @@ static inline uint64_t fBlaMka(uint64_t x, uint64_t y) {
 # endif
 
 # ifndef BLAKE2_ROUND_NOMSG
-#  define BLAKE2_ROUND_NOMSG(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11,   \
+#  define BLAKE2_ROUND_NOMSG(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, \
                            v12, v13, v14, v15)                                 \
     do {                                                                       \
         G(v0, v4, v8, v12);                                                    \

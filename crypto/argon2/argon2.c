@@ -27,20 +27,26 @@
 
 typedef struct argon2_param ARGON2_PARAM;
 
-int ossl_alloc(uint8_t **memory, size_t bytes) {
-	if (!memory) return -1;
-	*memory = OPENSSL_zalloc(bytes);
-	return memory != NULL;
+int ossl_alloc(uint8_t **memory, size_t bytes)
+{
+    if (memory == NULL)
+	return -1;
+
+    *memory = OPENSSL_zalloc(bytes);
+
+    return memory != NULL;
 }
 
-void ossl_dealloc(uint8_t *memory, size_t bytes) {
-	if (bytes)
-		OPENSSL_clear_free(memory, bytes);
-	else
-		OPENSSL_free(memory);
+void ossl_dealloc(uint8_t *memory, size_t bytes)
+{
+    if (bytes)
+	OPENSSL_clear_free(memory, bytes);
+    else
+	OPENSSL_free(memory);
 }
 
-int ARGON2_Init(ARGON2_CTX *c, argon2_type type) {
+int ARGON2_Init(ARGON2_CTX *c, argon2_type type)
+{
     c->out = NULL;
     c->outlen = 64;
     c->pwd = NULL;
@@ -94,7 +100,8 @@ int ARGON2_Init(ARGON2_CTX *c, argon2_type type) {
     return 1;
 }
 
-int ARGON2_Update(ARGON2_CTX *context, uint8_t *data, size_t datalen) {
+int ARGON2_Update(ARGON2_CTX *context, uint8_t *data, size_t datalen)
+{
     context->pwd = data;
     context->pwdlen = datalen;
 
@@ -164,7 +171,8 @@ int ARGON2_Update(ARGON2_CTX *context, uint8_t *data, size_t datalen) {
     return 1;
 }
 
-int ARGON2_Final(uint8_t *md, ARGON2_CTX *c) {
+int ARGON2_Final(uint8_t *md, ARGON2_CTX *c)
+{
     if (md == NULL || c == NULL) {
         return ARGON2_OUTPUT_PTR_NULL;
     }
@@ -172,7 +180,8 @@ int ARGON2_Final(uint8_t *md, ARGON2_CTX *c) {
     return 1;
 }
 
-const char *argon2_type2string(argon2_type type, int uppercase) {
+const char *argon2_type2string(argon2_type type, int uppercase)
+{
     switch (type) {
         case Argon2_d:
             return uppercase ? "Argon2d" : "argon2d";

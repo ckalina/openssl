@@ -1,6 +1,7 @@
 #include "blake2b.h"
 
-int blake2b_nokey(void *out, size_t outlen, const void *in, size_t inlen) {
+int blake2b_nokey(void *out, size_t outlen, const void *in, size_t inlen)
+{
     EVP_MD_CTX *mdctx = NULL;
 
     if((mdctx = EVP_MD_CTX_create()) == NULL)
@@ -26,7 +27,8 @@ fail:
 }
 
 int blake2b(void *out, size_t outlen, const void *in, size_t inlen,
-                   const void *key, size_t keylen) {
+                   const void *key, size_t keylen)
+{
     if (key == NULL || keylen == 0)
         return blake2b_nokey(out, outlen, in, inlen);
 
@@ -60,7 +62,8 @@ fail:
     return 0;
 }
 
-int blake2b_long(void *pout, uint32_t outlen, const void *in, size_t inlen) {
+int blake2b_long(void *pout, uint32_t outlen, const void *in, size_t inlen)
+{
     unsigned char *out = (unsigned char *)pout;
     uint8_t outlen_bytes[sizeof(uint32_t)] = {0};
 

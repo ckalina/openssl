@@ -55,27 +55,34 @@
 #endif
 
 /***************Instance and Position constructors**********/
-void init_block_value(block *b, uint8_t in) { memset(b->v, in, sizeof(b->v)); }
+void init_block_value(block *b, uint8_t in)
+{
+    memset(b->v, in, sizeof(b->v));
+}
 
-void copy_block(block *dst, const block *src) {
+void copy_block(block *dst, const block *src)
+{
     memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
 }
 
-void xor_block(block *dst, const block *src) {
+void xor_block(block *dst, const block *src)
+{
     int i;
     for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
         dst->v[i] ^= src->v[i];
     }
 }
 
-static void load_block(block *dst, const void *input) {
+static void load_block(block *dst, const void *input)
+{
     unsigned i;
     for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
         dst->v[i] = load64((const uint8_t *)input + i * sizeof(dst->v[i]));
     }
 }
 
-static void store_block(void *output, const block *src) {
+static void store_block(void *output, const block *src)
+{
     unsigned i;
     for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
         store64((uint8_t *)output + i * sizeof(src->v[i]), src->v[i]);
@@ -85,7 +92,8 @@ static void store_block(void *output, const block *src) {
 /***************Memory functions*****************/
 
 int allocate_memory(const argon2_context *context, uint8_t **memory,
-                    size_t num, size_t size) {
+                    size_t num, size_t size)
+{
     size_t memory_size = num*size;
     if (memory == NULL) {
         return ARGON2_MEMORY_ALLOCATION_ERROR;
@@ -111,7 +119,8 @@ int allocate_memory(const argon2_context *context, uint8_t **memory,
 }
 
 void free_memory(const argon2_context *context, uint8_t *memory,
-                 size_t num, size_t size) {
+                 size_t num, size_t size)
+{
     size_t memory_size = num*size;
     clear_internal_memory(memory, memory_size);
     if (context->free_cbk) {
@@ -129,7 +138,8 @@ void free_memory(const argon2_context *context, uint8_t *memory,
 #endif
 #endif
 
-void NOT_OPTIMIZED secure_wipe_memory(void *v, size_t n) {
+void NOT_OPTIMIZED secure_wipe_memory(void *v, size_t n)
+{
 #if defined(_MSC_VER) && VC_GE_2005(_MSC_VER)
     SecureZeroMemory(v, n);
 #elif defined memset_s
@@ -150,7 +160,8 @@ void clear_internal_memory(void *v, size_t n) {
   }
 }
 
-void finalize(const argon2_context *context, argon2_instance_t *instance) {
+void finalize(const argon2_context *context, argon2_instance_t *instance)
+{
     if (context != NULL && instance != NULL) {
         block blockhash;
         uint32_t l;
@@ -182,7 +193,8 @@ void finalize(const argon2_context *context, argon2_instance_t *instance) {
 
 uint32_t index_alpha(const argon2_instance_t *instance,
                      const argon2_position_t *position, uint32_t pseudo_rand,
-                     int same_lane) {
+                     int same_lane)
+{
     /*
      * Pass 0:
      *      This lane : all already finished segments plus already constructed
@@ -251,7 +263,8 @@ uint32_t index_alpha(const argon2_instance_t *instance,
 }
 
 /* Single-threaded version for p=1 case */
-static int fill_memory_blocks_st(argon2_instance_t *instance) {
+static int fill_memory_blocks_st(argon2_instance_t *instance)
+{
     uint32_t r, s, l;
 
     for (r = 0; r < instance->passes; ++r) {
@@ -372,7 +385,8 @@ int fill_memory_blocks(argon2_instance_t *instance) {
 #endif
 }
 
-int validate_inputs(const argon2_context *context) {
+int validate_inputs(const argon2_context *context)
+{
     if (NULL == context) {
         return ARGON2_INCORRECT_PARAMETER;
     }
@@ -499,20 +513,19 @@ int validate_inputs(const argon2_context *context) {
     return ARGON2_OK;
 }
 
-void fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instance) {
+void fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instance)
+{
     uint32_t l;
     /* Make the first and second block in each lane as G(H0||0||i) or
        G(H0||1||i) */
     uint8_t blockhash_bytes[ARGON2_BLOCK_SIZE];
     for (l = 0; l < instance->lanes; ++l) {
-
         store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 0);
         store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH + 4, l);
         blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
                      ARGON2_PREHASH_SEED_LENGTH);
         load_block(&instance->memory[l * instance->lane_length + 0],
                    blockhash_bytes);
-
         store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 1);
         blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
                      ARGON2_PREHASH_SEED_LENGTH);
@@ -523,7 +536,8 @@ void fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instance) {
 }
 
 void initial_hash(uint8_t *blockhash, argon2_context *context,
-                  argon2_type type) {
+                  argon2_type type)
+{
     uint8_t value[sizeof(uint32_t)];
 
     if (NULL == context || NULL == blockhash) {
@@ -633,7 +647,8 @@ fail:
     return;
 }
 
-int initialize(argon2_instance_t *instance, argon2_context *context) {
+int initialize(argon2_instance_t *instance, argon2_context *context)
+{
     uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
     int result = ARGON2_OK;
 
