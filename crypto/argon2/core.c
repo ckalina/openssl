@@ -260,6 +260,96 @@ uint32_t index_alpha(const argon2_instance_t *instance,
     return absolute_position;
 }
 
+
+#if !defined(ARGON2_NO_THREADS)
+
+static THREAD_ROUTINE_RET __stdcall fill_segment_thr(void *thread_data)
+{
+    argon2_thread_data *my_data = thread_data;
+    fill_segment(my_data->instance_ptr, my_data->pos);
+    CRYPTO_THREAD_exit();
+    return 0;
+}
+
+/* Multi-threaded version for p > 1 case */
+static int fill_memory_blocks_mt(argon2_instance_t *instance) {
+    uint32_t r, s;
+    CRYPTO_THREAD *thread[instance->lanes];
+    argon2_thread_data *thr_data = NULL;
+    int rc = ARGON2_OK;
+
+    /* 1. Allocating space for threads */
+    thr_data = OPENSSL_zalloc(instance->lanes*sizeof(argon2_thread_data));
+    if (thr_data == NULL) {
+        rc = ARGON2_MEMORY_ALLOCATION_ERROR;
+        goto fail;
+    }
+
+    for (r = 0; r < instance->passes; ++r) {
+        for (s = 0; s < ARGON2_SYNC_POINTS; ++s) {
+            uint32_t l, ll;
+
+            /* 2. Calling threads */
+            for (l = 0; l < instance->lanes; ++l) {
+                argon2_position_t position;
+
+                /* 2.1 Join a thread if limit is exceeded */
+                if (l >= instance->threads) {
+                    if (CRYPTO_THREAD_join(thread[l - instance->threads])) {
+                        rc = ARGON2_THREAD_FAIL;
+                        goto fail;
+                    }
+                }
+
+                /* 2.2 Create thread */
+                position.pass = r;
+                position.lane = l;
+                position.slice = (uint8_t)s;
+                position.index = 0;
+
+		/* preparing the thread input */
+                thr_data[l].instance_ptr = instance;
+                memcpy(&(thr_data[l].pos), &position,
+		       sizeof(argon2_position_t));
+
+		thread[l] = CRYPTO_THREAD_new(
+		    (CRYPTO_THREAD_ROUTINE) &fill_segment_thr,
+		    (void*)&thr_data[l],
+		    NULL
+		);
+
+		if (thread[l] == NULL) {
+                    /* Wait for already running threads */
+                    for (ll = 0; ll < l; ++ll)
+                        CRYPTO_THREAD_join(thread[ll]);
+                    rc = ARGON2_THREAD_FAIL;
+                    goto fail;
+                }
+
+                /* fill_segment(instance, position); */
+                /*Non-thread equivalent of the lines above */
+            }
+
+            /* 3. Joining remaining threads */
+            for (l = instance->lanes - instance->threads; l < instance->lanes;
+                 ++l) {
+                if (CRYPTO_THREAD_join(thread[l])) {
+                    rc = ARGON2_THREAD_FAIL;
+                    goto fail;
+                }
+            }
+        }
+    }
+
+fail:
+    if (thr_data != NULL) {
+        OPENSSL_free(thr_data);
+    }
+    return rc;
+}
+
+#endif /* ARGON2_NO_THREADS */
+
 /* Single-threaded version for p=1 case */
 static int fill_memory_blocks_st(argon2_instance_t *instance)
 {
@@ -281,7 +371,12 @@ int fill_memory_blocks(argon2_instance_t *instance)
     if (instance == NULL || instance->lanes == 0) {
 	return ARGON2_INCORRECT_PARAMETER;
     }
+#if defined(ARGON2_NO_THREADS)
     return fill_memory_blocks_st(instance);
+#else
+    return instance->threads == 1 ?
+	    fill_memory_blocks_st(instance) : fill_memory_blocks_mt(instance);
+#endif
 }
 
 int validate_inputs(const argon2_context *context)

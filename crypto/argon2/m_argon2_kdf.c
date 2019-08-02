@@ -146,15 +146,6 @@ static void kdf_argon2_free(EVP_KDF_IMPL *impl)
 
 static int kdf_argon2_ctx_set_threads(argon2_context *ctx, uint32_t threads)
 {
-    if (threads != 1) {
-	/**
-	 * The first version of OpenSSL Argon2 does not support threads.
-	 * As such, throw an error when attempting to utilize those.
-	 */
-	EVPerr(KDF_F_KDF_ARGON2_CTRL, KDF_R_NOT_SUPPORTED);
-	return 0;
-    }
-
     if (threads > ARGON2_MAX_THREADS || threads < ARGON2_MIN_THREADS) {
 	EVPerr(KDF_F_KDF_ARGON2_CTRL, KDF_R_VALUE_ERROR);
 	return 0;
