@@ -4,15 +4,12 @@
  * Copyright 2015
  * Daniel Dinu, Dmitry Khovratovich, Jean-Philippe Aumasson, and Samuel Neves
  *
- * You may use this work under the terms of a Creative Commons CC0 1.0
- * License/Waiver or the Apache Public License 2.0, at your option. The terms of
- * these licenses can be found at:
+ * You may use this work under the terms of the Apache Public License 2.0.
+ * The terms of this licenses can be found at:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * - CC0 1.0 Universal : http://creativecommons.org/publicdomain/zero/1.0
- * - Apache 2.0        : http://www.apache.org/licenses/LICENSE-2.0
- *
- * You should have received a copy of both of these licenses along with this
- * software. If not, they may be obtained at the above URLs.
+ * You should have received a copy of the license along with this
+ * software. If not, it may be obtained at the above URL.
  */
 
 #include <string.h>
@@ -47,16 +44,9 @@ void ossl_dealloc(uint8_t *memory, size_t bytes)
 
 int ARGON2_Init(ARGON2_CTX *c, argon2_type type)
 {
-    c->out = NULL;
+    memset(c, 0, sizeof(*c));
+
     c->outlen = 64;
-    c->pwd = NULL;
-    c->pwdlen = 0;
-    c->secret = NULL;
-    c->secretlen = 0;
-    c->salt = NULL;
-    c->saltlen = 0;
-    c->ad = NULL;
-    c->adlen = 0;
     c->t_cost = 3;
     c->m_cost = ARGON2_MIN_MEMORY;
     c->lanes = 1;

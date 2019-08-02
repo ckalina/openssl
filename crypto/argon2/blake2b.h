@@ -1,3 +1,16 @@
+/*
+ * Argon2 reference source code package - reference C implementations
+ *
+ * Copyright 2015
+ * Daniel Dinu, Dmitry Khovratovich, Jean-Philippe Aumasson, and Samuel Neves
+ *
+ * You may use this work under the terms of the Apache Public License 2.0.
+ * The terms of this licenses can be found at:
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * You should have received a copy of the license along with this
+ * software. If not, it may be obtained at the above URL.
+ */
 
 #ifndef __BLAKE2B_H
 # define __BLAKE2B_H
