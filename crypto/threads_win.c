@@ -15,6 +15,39 @@
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
+typedef struct { HANDLE h; DWORD id; } CRYPTO_THREAD;
+
+CRYPTO_THREAD *CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE *start, void *data,
+				 void *opts)
+{
+    CRYPTO_THREAD *thread;
+    LPTHREAD_START_ROUTINE start_routine;
+
+    start_routine = (LPTHREAD_START_ROUTINE) start;
+
+    if ((thread = OPENSSL_zalloc(sizeof(*thread)) == NULL)
+        return NULL;
+
+    thread->h = CreateThread(NULL, 0, start_routine, data, 0, &thread->id);
+    if (thread->h == NULL) {
+        OPENSSL_free(thread);
+	return NULL;
+    }
+
+    return thread;
+}
+
+int CRYPTO_THREAD_join(CRYPTO_THREAD *thread) {
+    if (WaitForSingleObject(thread->h, INFINITE) == WAIT_OBJECT_0)
+        return CloseHandle((HANDLE)handle) != 0 ? 0 : -1;
+    else
+	return 1;
+}
+
+int CRYPTO_THREAD_exit() {
+    ExitThread(0);
+}
+
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
     CRYPTO_RWLOCK *lock;

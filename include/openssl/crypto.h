@@ -64,7 +64,24 @@ typedef struct {
 
 # endif /* OPENSSL_API_1_1_0 */
 
+# ifndef __stdcall
+# define __stdcall __attribute__((stdcall))
+# endif
+
 typedef void CRYPTO_RWLOCK;
+typedef CRYPTO_THREAD;
+
+/*
+ * To accomodate both pthread and WinAPI, use the maximum number of bytes
+ * on a given architecture to have architecture/os-agnostic way of specifying
+ * thread routine prototypes.
+ */
+typedef union {
+	void *p;
+	unsigned long l;
+} THREAD_ROUTINE_RET;
+
+typedef THREAD_ROUTINE_RET (__stdcall *CRYPTO_THREAD_ROUTINE)(void *);
 
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void);
 int CRYPTO_THREAD_read_lock(CRYPTO_RWLOCK *lock);

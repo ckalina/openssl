@@ -16,6 +16,35 @@
 #  define USE_RWLOCK
 # endif
 
+typedef pthread_t CRYPTO_THREAD;
+
+CRYPTO_THREAD *CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE *start, void *data,
+				 void *opts)
+{
+    CRYPTO_THREAD *thread;
+    void *(__stdcall *start_routine)(void*);
+
+    start_routine = (void *(__stdcall *)(void*)) start;
+
+    if ((thread = OPENSSL_zalloc(sizeof(*thread)) == NULL)
+	return NULL;
+
+    if (pthread_create(thread, NULL, start_routine, data) != 0) {
+	OPENSSL_free(thread);
+	return NULL;
+    }
+
+    return thread;
+}
+
+int CRYPTO_THREAD_join(CRYPTO_THREAD *thread) {
+    return pthread_join(thread, NULL);
+}
+
+void CRYPTO_THREAD_exit() {
+    pthread_exit(NULL);
+}
+
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
 # ifdef USE_RWLOCK
