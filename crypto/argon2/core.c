@@ -263,18 +263,18 @@ uint32_t index_alpha(const argon2_instance_t *instance,
 
 #if !defined(ARGON2_NO_THREADS)
 
-static THREAD_ROUTINE_RET __stdcall fill_segment_thr(void *thread_data)
+static unsigned long __stdcall fill_segment_thr(void *thread_data)
 {
     argon2_thread_data *my_data = thread_data;
     fill_segment(my_data->instance_ptr, my_data->pos);
-    CRYPTO_THREAD_exit();
+    CRYPTO_THREAD_exit(0);
     return 0;
 }
 
 /* Multi-threaded version for p > 1 case */
 static int fill_memory_blocks_mt(argon2_instance_t *instance) {
     uint32_t r, s;
-    CRYPTO_THREAD *thread[instance->lanes];
+    CRYPTO_THREAD thread[instance->lanes];
     argon2_thread_data *thr_data = NULL;
     int rc = ARGON2_OK;
 
@@ -312,11 +312,8 @@ static int fill_memory_blocks_mt(argon2_instance_t *instance) {
                 memcpy(&(thr_data[l].pos), &position,
 		       sizeof(argon2_position_t));
 
-		thread[l] = CRYPTO_THREAD_new(
-		    (CRYPTO_THREAD_ROUTINE) &fill_segment_thr,
-		    (void*)&thr_data[l],
-		    NULL
-		);
+		thread[l] = CRYPTO_THREAD_new(&fill_segment_thr,
+					      (void*)&thr_data[l]);
 
 		if (thread[l] == NULL) {
                     /* Wait for already running threads */

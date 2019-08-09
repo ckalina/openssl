@@ -16,33 +16,42 @@
 #  define USE_RWLOCK
 # endif
 
-typedef pthread_t CRYPTO_THREAD;
+typedef struct {
+    pthread_t handle;
+} *CRYPTO_THREAD_PTHREAD;
 
-CRYPTO_THREAD *CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE *start, void *data,
-				 void *opts)
+CRYPTO_THREAD CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void *data)
 {
-    CRYPTO_THREAD *thread;
-    void *(__stdcall *start_routine)(void*);
+    CRYPTO_THREAD_PTHREAD thread;
+    void *(*start_routine)(void*) = (void *(*)(void*)) start;
 
-    start_routine = (void *(__stdcall *)(void*)) start;
-
-    if ((thread = OPENSSL_zalloc(sizeof(*thread)) == NULL)
+    if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
 	return NULL;
 
-    if (pthread_create(thread, NULL, start_routine, data) != 0) {
+    if (pthread_create(&thread->handle, NULL, start_routine, data) != 0) {
 	OPENSSL_free(thread);
 	return NULL;
     }
 
-    return thread;
+    return (CRYPTO_THREAD) thread;
 }
 
-int CRYPTO_THREAD_join(CRYPTO_THREAD *thread) {
-    return pthread_join(thread, NULL);
+unsigned int CRYPTO_THREAD_join(CRYPTO_THREAD thread)
+{
+    unsigned int retval;
+    CRYPTO_THREAD_PTHREAD thread_p = (CRYPTO_THREAD_PTHREAD) thread;
+
+    if (thread == NULL)
+	return -1;
+
+    if (pthread_join(thread_p->handle, (void **)&retval) != 0)
+	return -1;
+
+    return retval;
 }
 
-void CRYPTO_THREAD_exit() {
-    pthread_exit(NULL);
+void CRYPTO_THREAD_exit(unsigned long retval) {
+    pthread_exit((void*)retval);
 }
 
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)

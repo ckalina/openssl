@@ -41,10 +41,10 @@ int blake2b(void *out, size_t outlen, const void *in, size_t inlen,
     if (key == NULL || keylen == 0)
         return blake2b_nokey(out, outlen, in, inlen);
 
-    EVP_MAC *mac;
     EVP_MAC_CTX *ctx = NULL;
+    const EVP_MAC *mac = EVP_get_macbynid(EVP_MAC_BLAKE2B);
 
-    if ((mac = EVP_get_macbynid(EVP_MAC_BLAKE2B) == NULL)
+    if (mac == NULL)
 	goto fail;
 
     if ((ctx = EVP_MAC_CTX_new(mac)) == NULL)

@@ -15,37 +15,47 @@
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
-typedef struct { HANDLE h; DWORD id; } CRYPTO_THREAD;
+typedef struct {
+    HANDLE handle;
+} *CRYPTO_THREAD_WIN;
 
-CRYPTO_THREAD *CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE *start, void *data,
-				 void *opts)
+CRYPTO_THREAD CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void *data)
 {
-    CRYPTO_THREAD *thread;
-    LPTHREAD_START_ROUTINE start_routine;
+    CRYPTO_THREAD thread;
+    LPTHREAD_START_ROUTINE start_routine = (LPTHREAD_START_ROUTINE) start;
 
-    start_routine = (LPTHREAD_START_ROUTINE) start;
-
-    if ((thread = OPENSSL_zalloc(sizeof(*thread)) == NULL)
+    if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
         return NULL;
 
-    thread->h = CreateThread(NULL, 0, start_routine, data, 0, &thread->id);
-    if (thread->h == NULL) {
+    thread->handle = CreateThread(NULL, 0, start_routine, data, 0, NULL);
+    if (thread->handle == NULL) {
         OPENSSL_free(thread);
 	return NULL;
     }
 
-    return thread;
+    return (CRYPTO_THREAD) thread;
 }
 
-int CRYPTO_THREAD_join(CRYPTO_THREAD *thread) {
-    if (WaitForSingleObject(thread->h, INFINITE) == WAIT_OBJECT_0)
-        return CloseHandle((HANDLE)handle) != 0 ? 0 : -1;
-    else
-	return 1;
+unsigned int CRYPTO_THREAD_join(CRYPTO_THREAD thread)
+{
+    unsigned int retval;
+    CRYPTO_THREAD_WIN thread_w = (CRYPTO_THREAD_WIN) thread;
+
+    if (WaitForSingleObject(thread_w->handle, INFINITE) != WAIT_OBJECT_0)
+	return -1;
+
+    if (GetExitCodeThread(thread_w->handle, (LPDWORD) &retval) == 0)
+	return -1;
+
+    if (CloseHandle(thread->handle) == 0)
+	return -1;
+
+    return retval;
 }
 
-int CRYPTO_THREAD_exit() {
-    ExitThread(0);
+void CRYPTO_THREAD_exit(unsigned long retval)
+{
+    ExitThread(retval);
 }
 
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
