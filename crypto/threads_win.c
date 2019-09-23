@@ -15,6 +15,155 @@
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
+volatile int CRYPTO_THREAD_EXTERN_enabled = 0;
+volatile int CRYPTO_THREAD_INTERN_enabled = 0;
+
+typedef struct {
+    CRYPTO_THREAD_CALLBACK callback;
+    HANDLE * handle;
+} CRYPTO_THREAD_WIN;
+
+/** CRYPTO THREAD: External -- currently not supported for Windows **/
+
+int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS *props)
+{
+    return 0;
+}
+
+int CRYPTO_THREAD_EXTERN_disable(void)
+{
+    return 1;
+}
+
+void * CRYPTO_THREAD_EXTERN_handle(void * data)
+{
+    (void) ret;
+    return NULL;
+}
+
+void * CRYPTO_THREAD_EXTERN_provide(int * ret)
+{
+    (void) ret;
+    return NULL;
+}
+
+void * CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void * data)
+{
+    (void) task;
+    (void) data;
+    return NULL;
+}
+
+int CRYPTO_THREAD_EXTERN_join(void * task_id, unsigned long * retval)
+{
+    (void) task_id;
+    (void) retval;
+    return 0;
+}
+
+# ifndef CRYPTO_THREAD_EXTERN_exit
+#  define CRYPTO_THREAD_EXTERN_exit return
+# endif
+
+/** CRYPTO THREAD: Internal **/
+
+# ifdef OPENSSL_NO_INTERN_THREAD
+
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS *props)
+{
+    return 0;
+}
+
+int CRYPTO_THREAD_INTERN_disable(void)
+{
+    return 1;
+}
+
+# else /* ! OPENSSL_NO_EXTERN_THREAD */
+
+extern CRYPTO_SIGNAL_CALLBACK cb_ctrl_c_event;
+extern CRYPTO_SIGNAL_CALLBACK cb_break_event;
+
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS *props)
+{
+    if (props == NULL)
+        return 0;
+
+    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c_event) != 1)
+        goto fail;
+
+    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break_event) != 1)
+        goto fail;
+
+    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close_event) != 1)
+        goto fail;
+
+    CRYPTO_THREAD_INTERN_enabled = 1;
+    return 1;
+
+fail:
+
+    CRYPTO_THREAD_INTERN_disable();
+    return 0;
+}
+
+int CRYPTO_THREAD_INTERN_disable()
+{
+    CRYPTO_SIGNAL_block(CTRL_C_EVENT, NULL);
+    CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, NULL);
+    CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, NULL);
+
+    CRYPTO_THREAD_INTERN_enabled = 0;
+    return 1;
+}
+
+# endif
+
+void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void *data)
+{
+    CRYPTO_THREAD * thread;
+    LPTHREAD_START_ROUTINE start_routine = (LPTHREAD_START_ROUTINE) start;
+
+    if (CRYPTO_THREAD_INTERN_enabled == 0)
+        return NULL;
+
+    if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
+        return NULL;
+
+    if ((thread->handle = OPENSSL_zalloc(sizeof(*thread->handle))) == NULL)
+        return NULL;
+
+    *thread->handle = CreateThread(NULL, 0, start_routine, data, 0, NULL);
+    if (thread->handle == NULL) {
+        OPENSSL_free(thread->handle);
+        OPENSSL_free(thread);
+        return NULL;
+    }
+
+    return (void *) thread;
+}
+
+int CRYPTO_THREAD_INTERN_join(void * thread, unsigned long * retval)
+{
+    CRYPTO_THREAD_WIN * thread_w = (CRYPTO_THREAD_WIN *) thread;
+
+    if (WaitForSingleObject(*thread_w->handle, INFINITE) != WAIT_OBJECT_0)
+        return 0;
+
+    if (GetExitCodeThread(*thread_w->handle, (LPDWORD) &retval) == 0)
+        return 0;
+
+    if (CloseHandle(*thread->handle) == 0)
+        return 0;
+
+    return 1;
+}
+
+void CRYPTO_THREAD_INTERN_exit(unsigned long retval)
+{
+    ExitThread(retval);
+}
+
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
     CRYPTO_RWLOCK *lock;

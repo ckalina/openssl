@@ -31,6 +31,7 @@
 # include <openssl/types.h>
 # include <openssl/opensslconf.h>
 # include <openssl/cryptoerr.h>
+# include <openssl/list.h>
 
 # ifdef CHARSET_EBCDIC
 #  include <openssl/ebcdic.h>
@@ -79,6 +80,126 @@ int CRYPTO_THREAD_unlock(CRYPTO_RWLOCK *lock);
 void CRYPTO_THREAD_lock_free(CRYPTO_RWLOCK *lock);
 
 int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
+
+# if defined(OPENSSL_THREADS)
+
+#  ifndef __stdcall
+#   define __stdcall
+#  endif
+
+/*
+ * To accomodate both pthread and Windows thread API, unsigned long was
+ * selected as the common return value from a thread, thus resolving
+ * conflicting sizes of void* and DWORD on different platforms.
+ * Return value of -1 is reserved for error indication of the
+ * CRYPTO_THREAD_join function.
+ */
+typedef unsigned long (__stdcall *CRYPTO_THREAD_ROUTINE)(void *);
+typedef void          (__stdcall *CRYPTO_THREAD_CALLBACK)(void *);
+
+typedef void          (*CRYPTO_SIGNAL_CALLBACK)(int);
+
+/*
+ * Generic CRYPTO_THREAD object. Both pthread and windows threads use
+ * their own specialized instances.
+ */
+typedef void * CRYPTO_THREAD;
+
+typedef struct {
+    CRYPTO_THREAD_ROUTINE   task;
+    void                  * data;
+    unsigned long           retval;
+    struct list             list;
+} CRYPTO_THREAD_TASK;
+
+typedef struct {
+    union {
+        struct {
+            CRYPTO_SIGNAL_CALLBACK cb_sigint;
+            CRYPTO_SIGNAL_CALLBACK cb_sigterm;
+        };
+        struct {
+            CRYPTO_SIGNAL_CALLBACK cb_ctrl_c_event;
+            CRYPTO_SIGNAL_CALLBACK cb_ctrl_break_event;
+            CRYPTO_SIGNAL_CALLBACK cb_ctrl_close_event;
+        };
+    };
+} CRYPTO_SIGNAL_PROPS;
+
+/*****************************************************************************
+ *
+ * The following globals indicate whether application using OpenSSL has
+ * explicitly approved use of threads, internal or external.
+ *
+ ****************************************************************************/
+
+#  ifndef CRYPTO_THREAD_EINVAL
+#   define CRYPTO_THREAD_EINVAL -1
+#  endif
+
+extern volatile int  CRYPTO_THREAD_INTERN_enabled;
+extern volatile int  CRYPTO_THREAD_EXTERN_enabled;
+
+int    CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS * props);
+int    CRYPTO_THREAD_INTERN_disable(void);
+void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void * data,
+                                int * ret);
+int    CRYPTO_THREAD_INTERN_join(void * thread, unsigned long * retval);
+void   CRYPTO_THREAD_INTERN_exit(unsigned long retval);
+
+int    CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS *props);
+int    CRYPTO_THREAD_EXTERN_disable(void);
+void * CRYPTO_THREAD_EXTERN_handle(void * data);
+void * CRYPTO_THREAD_EXTERN_provide(int * ret, int (*cb)(size_t));
+void * CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void * data);
+int    CRYPTO_THREAD_EXTERN_join(void * task_id, unsigned long * retval);
+
+int    CRYPTO_SIGNAL_block(int signal, void (*callback)(int));
+
+/*****************************************************************************
+ *
+ * The following functions are wrappers to the respective internal/external
+ * functions. These are to be called from inside of OpenSSL.
+ *
+ ****************************************************************************/
+
+static inline void * CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start,
+                                       void * data, int * ret)
+{
+    void * thread = NULL;
+    if (CRYPTO_THREAD_EXTERN_enabled == 1) {
+        thread = CRYPTO_THREAD_EXTERN_add_job(start, data);
+        if (ret != NULL)
+            *ret = (thread == NULL) ? 0 : 1;
+    }
+    else if (CRYPTO_THREAD_INTERN_enabled == 1) {
+        thread = CRYPTO_THREAD_INTERN_new(start, data, ret);
+    }
+    return thread;
+}
+
+static inline int CRYPTO_THREAD_join(void * thread, unsigned long * retval)
+{
+    if (CRYPTO_THREAD_EXTERN_enabled == 1)
+        return CRYPTO_THREAD_EXTERN_join(thread, retval);
+    if (CRYPTO_THREAD_INTERN_enabled == 1)
+        return CRYPTO_THREAD_INTERN_join(thread, retval);
+    return 0;
+}
+
+/* Since `external' thread is actually just a function call from a handle,
+ * one that we might wish to re-use, we cannot simply call native pthread/
+ * WinAPI thread exit functions. To provide a uniform API, CRYPTO_THREAD_exit
+ * is a macro that, when `external' threads are used, resolves to a return
+ * call. */
+#   define CRYPTO_THREAD_exit(RETVAL) do {        \
+         if (CRYPTO_THREAD_EXTERN_enabled == 1)   \
+             return (RETVAL);                     \
+         CRYPTO_THREAD_INTERN_exit(RETVAL);       \
+    } while(0)
+
+# endif /* OPENSSL_THREADS */
+
 
 /*
  * The following can be used to detect memory leaks in the library. If
