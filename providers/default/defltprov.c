@@ -325,6 +325,11 @@ static const OSSL_ALGORITHM deflt_kdfs[] = {
 #ifndef OPENSSL_NO_SCRYPT
     { "SCRYPT:id-scrypt", "default=yes", kdf_scrypt_functions },
 #endif
+#ifndef OPENSSL_NO_ARGON2
+    { "ARGON2i", "default=yes", kdf_argon2i_functions },
+    { "ARGON2d", "default=yes", kdf_argon2d_functions },
+    { "ARGON2id", "default=yes", kdf_argon2id_functions },
+#endif
    { NULL, NULL, NULL }
 };
 

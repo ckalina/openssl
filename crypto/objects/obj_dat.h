@@ -1087,7 +1087,7 @@ static const unsigned char so[7837] = {
     0x2B,0x06,0x01,0x05,0x05,0x07,0x08,0x07,       /* [ 7828] OBJ_SRVName */
 };
 
-#define NUM_NID 1211
+#define NUM_NID 1214
 static const ASN1_OBJECT nid_objs[NUM_NID] = {
     {"UNDEF", "undefined", NID_undef},
     {"rsadsi", "RSA Data Security, Inc.", NID_rsadsi, 6, &so[0]},
@@ -2300,9 +2300,12 @@ static const ASN1_OBJECT nid_objs[NUM_NID] = {
     {"id-on-SmtpUTF8Mailbox", "Smtp UTF8 Mailbox", NID_id_on_SmtpUTF8Mailbox, 8, &so[7812]},
     {"id-on-xmppAddr", "XmppAddr", NID_XmppAddr, 8, &so[7820]},
     {"id-on-dnsSRV", "SRVName", NID_SRVName, 8, &so[7828]},
+    {"ARGON2I", "argon2i", NID_argon2i},
+    {"ARGON2D", "argon2d", NID_argon2d},
+    {"ARGON2ID", "argon2id", NID_argon2id},
 };
 
-#define NUM_SN 1202
+#define NUM_SN 1205
 static const unsigned int sn_objs[NUM_SN] = {
      364,    /* "AD_DVCS" */
      419,    /* "AES-128-CBC" */
@@ -2340,6 +2343,9 @@ static const unsigned int sn_objs[NUM_SN] = {
      428,    /* "AES-256-OFB" */
     1200,    /* "AES-256-SIV" */
      914,    /* "AES-256-XTS" */
+    1212,    /* "ARGON2D" */
+    1211,    /* "ARGON2I" */
+    1213,    /* "ARGON2ID" */
     1066,    /* "ARIA-128-CBC" */
     1120,    /* "ARIA-128-CCM" */
     1067,    /* "ARIA-128-CFB" */
@@ -3508,7 +3514,7 @@ static const unsigned int sn_objs[NUM_SN] = {
     1093,    /* "x509ExtAdmission" */
 };
 
-#define NUM_LN 1202
+#define NUM_LN 1205
 static const unsigned int ln_objs[NUM_LN] = {
      363,    /* "AD Time Stamping" */
      405,    /* "ANSI X9.62" */
@@ -3769,6 +3775,9 @@ static const unsigned int ln_objs[NUM_LN] = {
     1200,    /* "aes-256-siv" */
      914,    /* "aes-256-xts" */
      376,    /* "algorithm" */
+    1212,    /* "argon2d" */
+    1211,    /* "argon2i" */
+    1213,    /* "argon2id" */
     1066,    /* "aria-128-cbc" */
     1120,    /* "aria-128-ccm" */
     1067,    /* "aria-128-cfb" */

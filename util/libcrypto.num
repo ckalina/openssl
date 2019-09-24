@@ -4826,3 +4826,16 @@ EVP_DigestSignInit_ex                   4942	3_0_0	EXIST::FUNCTION:
 EVP_DigestSignUpdate                    4943	3_0_0	EXIST::FUNCTION:
 EVP_DigestVerifyInit_ex                 4944	3_0_0	EXIST::FUNCTION:
 EVP_DigestVerifyUpdate                  4945	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_INTERN_enable             4946	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_INTERN_disable            4947	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_INTERN_new                4948	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_INTERN_join               4949	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_INTERN_exit               4950	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_enable             4951	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_disable            4952	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_handle             4953	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_provide            4954	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_add_job            4955	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_EXTERN_join               4956	3_0_0	EXIST::FUNCTION:
+CRYPTO_SIGNAL_block                     4957	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_new                       4958	3_0_0	EXIST::FUNCTION:
