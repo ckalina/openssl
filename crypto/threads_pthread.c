@@ -122,7 +122,7 @@ int CRYPTO_THREAD_EXTERN_disable()
 
 # endif /* ! OPENSSL_NO_EXTERN_THREAD */
 
-static void* CRYPTO_THREAD_EXTERN_handle(void * data)
+static void* CRYPTO_THREAD_EXTERN_worker(void * data)
 {
     size_t task_cnt;
 	CRYPTO_THREAD_CALLBACK cb = (CRYPTO_THREAD_CALLBACK)data;
@@ -171,7 +171,7 @@ void * CRYPTO_THREAD_EXTERN_provide(int * ret, CRYPTO_THREAD_CALLBACK cb)
     if ((thread->handle = OPENSSL_zalloc(sizeof(*thread->handle))) == NULL)
         return NULL;
 
-    *ret = pthread_create(thread->handle, NULL, CRYPTO_THREAD_EXTERN_handle,
+    *ret = pthread_create(thread->handle, NULL, CRYPTO_THREAD_EXTERN_worker,
                           (void *) cb);
 
     if (*ret != 0) {

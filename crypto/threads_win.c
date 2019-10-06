@@ -12,6 +12,7 @@
 #endif
 
 #include <openssl/crypto.h>
+#include <openssl/async.h>
 #include "internal/threads.h"
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
@@ -22,6 +23,7 @@ volatile int CRYPTO_THREAD_INTERN_enabled = 0;
 typedef struct {
     HANDLE * handle;
 } CRYPTO_THREAD_WIN;
+
 
 /** CRYPTO THREAD: External **/
 
@@ -87,39 +89,100 @@ int CRYPTO_THREAD_EXTERN_disable(void)
     return 1;
 }
 
-static DWORD CALLBACK CRYPTO_THREAD_EXTERN_handle(LPVOID data)
+static int CRYPTO_THREAD_EXTERN_job(void * arg)
+{
+    CRYPTO_THREAD_TASK* task = (CRYPTO_THREAD_TASK*)arg;
+    if (task == NULL)
+        return 0;
+
+    ASYNC_JOB* currjob = ASYNC_get_current_job();
+    if (currjob == NULL)
+        return 0;
+
+    ASYNC_block_pause();
+    task->retval = task->task(task->data);
+    ASYNC_unblock_pause();
+
+    return 1;
+}
+
+static void CRYPTO_THREAD_EXTERN_worker_async(CRYPTO_THREAD_TASK * task,
+                                              char * async_state)
+{
+    int r1, r2 = 1;
+    ASYNC_JOB * async_job;
+    ASYNC_WAIT_CTX * async_ctx;
+
+    if ((async_ctx = ASYNC_WAIT_CTX_new()) == NULL) {
+        *async_state |= (char) THREAD_ASYNC_ERR;
+        return;
+    }
+
+    r1 = ASYNC_start_job(&async_job, async_ctx, &r2, CRYPTO_THREAD_EXTERN_job,
+                         task, sizeof(task));
+
+    /* Async job creation either failed, or no jobs were detected, or an error
+     * occured in job initialization. Use sync approach instead. */
+    if (r1 == ASYNC_ERR || r1 == ASYNC_NO_JOBS || r2 == 0)
+        *async_state |= (char)THREAD_ASYNC_ERR;
+
+    ASYNC_WAIT_CTX_free(async_ctx);
+
+    /**
+     * If a job didn't gracefully finish (i.e., had the chance to cleanup all
+     * private data; e.g., when CRYPTO_THREAD_exit is called from an arbitrary
+     * location), we forcefully destroy all data associated with the job.
+     */
+    if (r1 == ASYNC_PAUSE) {
+        ASYNC_cleanup_thread();
+        *async_state &= (char)~THREAD_ASYNC_RDY;
+    }
+}
+
+static DWORD CALLBACK CRYPTO_THREAD_EXTERN_worker(LPVOID data)
 {
     size_t task_cnt;
-    CRYPTO_THREAD_CALLBACK cb = (CRYPTO_THREAD_CALLBACK)data;
+    char async_state = THREAD_ASYNC_CAPABLE * (ASYNC_is_capable() == 0);
+    CRYPTO_THREAD_TASK * task;
+    CRYPTO_THREAD_CALLBACK worker_exit_cb = (CRYPTO_THREAD_CALLBACK)data;
 
     while (1) {
+        if (async_state == THREAD_ASYNC_CAPABLE)
+            async_state |= (ASYNC_init_thread(1, 1) > 0) * THREAD_ASYNC_RDY;
+
         EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
 
-        /* To avoid spurious wakeups and to allow for immediate job
-         * processing: */
+        /* Avoid spurious wakeups and allow immediate job processing: */
         while (list_empty(&CRYPTO_THREAD_EXTERN_task_queue) == 1)
             SleepConditionVariableCS(&CRYPTO_THREAD_EXTERN_task_cond_create,
                                      &CRYPTO_THREAD_EXTERN_task_lock,
                                      INFINITE);
 
-            struct list* job_l = CRYPTO_THREAD_EXTERN_task_queue.next;
-            CRYPTO_THREAD_TASK* task = container_of(job_l, CRYPTO_THREAD_TASK,
-                                                    list);
-            list_del(job_l);
+        struct list* job_l = CRYPTO_THREAD_EXTERN_task_queue.next;
+        task = container_of(job_l, CRYPTO_THREAD_TASK, list);
+        list_del(job_l);
+        LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+
+        if (async_state & THREAD_ASYNC_RDY)
+            CRYPTO_THREAD_EXTERN_worker_async(task, &async_state);
+
+        if (async_state != THREAD_ASYNC_RDY | THREAD_ASYNC_CAPABLE)
+            task->retval = task->task(task->data);
+
+        list_add_tail(&task->list, &CRYPTO_THREAD_EXTERN_task_done);
+
+        if (worker_exit_cb != NULL) {
+            EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+            task_cnt = list_size(&CRYPTO_THREAD_EXTERN_task_queue);
             LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
 
-            task->retval = task->task(task->data);
-            list_add_tail(&task->list, &CRYPTO_THREAD_EXTERN_task_done);
-
-            if (cb != NULL) {
-                EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
-                task_cnt = list_size(&CRYPTO_THREAD_EXTERN_task_queue);
-                LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
-
-                if (cb(task_cnt) == 0)
-                    break;
-            }
+            if (worker_exit_cb(task_cnt) == 0)
+                break;
+        }
     }
+
+    if (async_state & THREAD_ASYNC_RDY)
+        ASYNC_cleanup_thread();
 
     return 0UL;
 }
@@ -137,7 +200,7 @@ void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb)
     if ((thread->handle = OPENSSL_zalloc(sizeof(*thread->handle))) == NULL)
         return NULL;
 
-    *thread->handle = CreateThread(NULL, 0, CRYPTO_THREAD_EXTERN_handle,
+    *thread->handle = CreateThread(NULL, 0, CRYPTO_THREAD_EXTERN_worker,
                                    (LPVOID) cb, 0, NULL);
 
     *ret = 0;
@@ -199,6 +262,12 @@ loop:
     task = NULL;
 
     return 1;
+}
+
+void CRYPTO_THREAD_EXTERN_exit(unsigned long retval)
+{
+    ASYNC_unblock_pause();
+    ASYNC_pause_job();
 }
 
 #  ifndef CRYPTO_THREAD_EXTERN_exit

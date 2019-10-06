@@ -36,10 +36,16 @@ int CRYPTO_THREAD_join(void* thread, unsigned long* retval)
 	return 0;
 }
 
-void CRYPTO_THREAD_exit(unsigned long retval)
+int CRYPTO_THREAD_exit(unsigned long retval)
 {
-    if (CRYPTO_THREAD_INTERN_enabled == 1)
+    if (CRYPTO_THREAD_EXTERN_enabled == 1 && ASYNC_is_capable()) {
         CRYPTO_THREAD_INTERN_exit(retval);
+        return 1;
+    } else if (CRYPTO_THREAD_INTERN_enabled == 1) {
+        CRYPTO_THREAD_INTERN_exit(retval);
+        return 1;
+    }
+    return 0;
 }
 
 long int CRYPTO_THREAD_provide(CRYPTO_THREAD_CALLBACK cb)

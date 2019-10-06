@@ -123,10 +123,10 @@ typedef int (*CRYPTO_THREAD_CALLBACK)(size_t);
 typedef void * CRYPTO_THREAD;
 
 typedef struct {
-    CRYPTO_THREAD_ROUTINE   task;
-    void                  * data;
-    unsigned long           retval;
-    struct list             list;
+    CRYPTO_THREAD_ROUTINE    task;
+    void                   * data;
+    unsigned long            retval;
+    struct list              list;
 } CRYPTO_THREAD_TASK;
 
 /*****************************************************************************
@@ -146,7 +146,7 @@ extern volatile int CRYPTO_THREAD_EXTERN_enabled;
 void * CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void* data,
                          unsigned long* ret);
 int    CRYPTO_THREAD_join(void* thread, unsigned long* retval);
-void   CRYPTO_THREAD_exit(unsigned long retval);
+int    CRYPTO_THREAD_exit(unsigned long retval);
 
 int    CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS * props);
 int    CRYPTO_THREAD_INTERN_disable(void);
@@ -154,19 +154,6 @@ int    CRYPTO_THREAD_INTERN_disable(void);
 int    CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
 int    CRYPTO_THREAD_EXTERN_disable(void);
 void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
-
-/**
- * When external threads are used, CRYPTO_THREAD_exit ought to correspond to
- * job termination rather than worker termination. Thus, we can't use either
- * pthread_exit or ExitThread.
- */
-#   define CRYPTO_THREAD_exit(RETVAL)              \
-        do {                                       \
-            if (CRYPTO_THREAD_EXTERN_enabled == 1) \
-                return (RETVAL);                   \
-            if (CRYPTO_THREAD_INTERN_enabled == 1) \
-                CRYPTO_THREAD_exit(RETVAL);        \
-        } while(0)
 
 # endif /* OPENSSL_THREADS */
 
