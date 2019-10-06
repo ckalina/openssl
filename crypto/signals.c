@@ -16,30 +16,30 @@
 
 volatile PHANDLER_ROUTINE callback_handler = NULL;
 
-volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_c_event = NULL;
-volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_break_event = NULL;
-volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_close_event = NULL;
+volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_c = NULL;
+volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_break = NULL;
+volatile CRYPTO_SIGNAL_CALLBACK cb_ctrl_close = NULL;
 
 BOOL WINAPI CRYPTO_SIGNAL_handler(DWORD dwType)
 {
     switch(dwType) {
     case CTRL_C_EVENT:
-        if (cb_ctrl_c_event != NULL) {
-            cb_ctrl_c_event((int)dwType);
+        if (cb_ctrl_c != NULL) {
+            cb_ctrl_c((int)dwType);
             return TRUE;
         } else {
             return FALSE;
         }
     case CTRL_BREAK_EVENT:
-        if (cb_ctrl_break_event != NULL) {
-            cb_ctrl_break_event((int)dwType);
+        if (cb_ctrl_break != NULL) {
+            cb_ctrl_break((int)dwType);
             return TRUE;
         } else {
             return FALSE;
         }
     case CTRL_CLOSE_EVENT:
-        if (cb_ctrl_close_event != NULL) {
-            cb_ctrl_close_event((int)dwType);
+        if (cb_ctrl_close != NULL) {
+            cb_ctrl_close((int)dwType);
             return TRUE;
         } else {
             return FALSE;
@@ -55,19 +55,19 @@ int CRYPTO_SIGNAL_block(int signal, CRYPTO_SIGNAL_CALLBACK cb)
 
     switch(signal) {
     case CTRL_C_EVENT:
-        cb_ctrl_c_event = cb;
+        cb_ctrl_c = cb;
         break;
     case CTRL_BREAK_EVENT:
-        cb_ctrl_break_event = cb;
+        cb_ctrl_break = cb;
         break;
     case CTRL_CLOSE_EVENT:
-        cb_ctrl_close_event = cb;
+        cb_ctrl_close = cb;
         break;
     }
 
     /* Associate handler if there are any signals and no handler has been
      * set. */
-    if (cb_ctrl_c_event | cb_ctrl_break_event | cb_ctrl_close_event != 0) {
+    if (cb_ctrl_c != NULL || cb_ctrl_break != NULL || cb_ctrl_close != NULL) {
         if (callback_handler == NULL) {
             callback_handler = (PHANDLER_ROUTINE) CRYPTO_SIGNAL_handler;
             if (SetConsoleCtrlHandler(callback_handler, TRUE) == 0)

@@ -19,50 +19,191 @@ volatile int CRYPTO_THREAD_EXTERN_enabled = 0;
 volatile int CRYPTO_THREAD_INTERN_enabled = 0;
 
 typedef struct {
-    CRYPTO_THREAD_CALLBACK callback;
     HANDLE * handle;
 } CRYPTO_THREAD_WIN;
 
-/** CRYPTO THREAD: External -- currently not supported for Windows **/
+/** CRYPTO THREAD: External **/
+
+struct list        CRYPTO_THREAD_EXTERN_task_queue;
+struct list        CRYPTO_THREAD_EXTERN_task_done;
+CRITICAL_SECTION   CRYPTO_THREAD_EXTERN_task_lock;
+CONDITION_VARIABLE CRYPTO_THREAD_EXTERN_task_cond_create;
+CONDITION_VARIABLE CRYPTO_THREAD_EXTERN_task_cond_finish;
+
+# ifdef OPENSSL_NO_EXTERN_THREAD
+
+int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props)
+{
+    return 0;
+}
+
+int CRYPTO_THREAD_EXTERN_disable()
+{
+    return 1;
+}
+
+# else /* ! OPENSSL_NO_EXTERN_THREAD */
+
 
 int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS *props)
 {
+    int ret = 0;
+
+    if (CRYPTO_THREAD_EXTERN_enabled == 1)
+        return 1;
+
+    if (props == NULL)
+        return 0;
+
+    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c_event) != 1)
+        goto fail;
+
+    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break_event) != 1)
+        goto fail;
+
+    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close_event) != 1)
+        goto fail;
+
+    list_init(&CRYPTO_THREAD_EXTERN_task_queue);
+    list_init(&CRYPTO_THREAD_EXTERN_task_done);
+
+    CRYPTO_THREAD_INTERN_enabled = 1;
+    return 1;
+
+fail:
+
+    CRYPTO_THREAD_INTERN_disable();
     return 0;
 }
 
 int CRYPTO_THREAD_EXTERN_disable(void)
 {
+    CRYPTO_SIGNAL_block(CTRL_C_EVENT, NULL);
+    CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, NULL);
+    CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, NULL);
+
+    CRYPTO_THREAD_EXTERN_enabled = 0;
     return 1;
 }
 
-void * CRYPTO_THREAD_EXTERN_handle(void * data)
+static DWORD CALLBACK CRYPTO_THREAD_EXTERN_handle(LPVOID data)
 {
-    (void) ret;
-    return NULL;
+    size_t task_cnt;
+    CRYPTO_THREAD_CALLBACK cb = (CRYPTO_THREAD_CALLBACK)data;
+
+    while (1) {
+        EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+
+        /* To avoid spurious wakeups and to allow for immediate job
+         * processing: */
+        while (list_empty(&CRYPTO_THREAD_EXTERN_task_queue) == 1)
+            SleepConditionVariableCS(&CRYPTO_THREAD_EXTERN_task_cond_create,
+                                     &CRYPTO_THREAD_EXTERN_task_lock,
+                                     INFINITE);
+
+            struct list* job_l = CRYPTO_THREAD_EXTERN_task_queue.next;
+            CRYPTO_THREAD_TASK* task = container_of(job_l, CRYPTO_THREAD_TASK,
+                                                    list);
+            list_del(job_l);
+            LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+
+            task->retval = task->task(task->data);
+            list_add_tail(&task->list, &CRYPTO_THREAD_EXTERN_task_done);
+
+            if (cb != NULL) {
+                EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+                task_cnt = list_size(&CRYPTO_THREAD_EXTERN_task_queue);
+                LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+
+                if (cb(task_cnt) == 0)
+                    break;
+            }
+    }
+
+    return 0UL;
 }
 
-void * CRYPTO_THREAD_EXTERN_provide(int * ret)
+void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb)
 {
-    (void) ret;
-    return NULL;
+    CRYPTO_THREAD_WIN* thread;
+
+    if (CRYPTO_THREAD_EXTERN_enabled != 1)
+        return NULL;
+
+    if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
+        return NULL;
+
+    if ((thread->handle = OPENSSL_zalloc(sizeof(*thread->handle))) == NULL)
+        return NULL;
+
+    *thread->handle = CreateThread(NULL, 0, CRYPTO_THREAD_EXTERN_handle,
+                                   (LPVOID) cb, 0, NULL);
+
+    *ret = 0;
+    if (thread->handle == NULL) {
+        *ret = GetLastError();
+        OPENSSL_free(thread->handle);
+        OPENSSL_free(thread);
+        return NULL;
+    }
+
+    return (void*)thread;
 }
 
 void * CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void * data)
 {
-    (void) task;
-    (void) data;
-    return NULL;
+    CRYPTO_THREAD_TASK* t;
+
+    t = OPENSSL_zalloc(sizeof(*t));
+    if (t == NULL)
+        return NULL;
+
+    t->task = task;
+    t->data = data;
+
+    EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+    list_add_tail(&t->list, &CRYPTO_THREAD_EXTERN_task_queue);
+    WakeAllConditionVariable(&CRYPTO_THREAD_EXTERN_task_cond_create);
+    LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+
+    return (void*)t;
 }
 
 int CRYPTO_THREAD_EXTERN_join(void * task_id, unsigned long * retval)
 {
-    (void) task_id;
-    (void) retval;
-    return 0;
+    struct list* i;
+    CRYPTO_THREAD_TASK* task = NULL;
+
+loop:
+    EnterCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+    list_for_each(i, &CRYPTO_THREAD_EXTERN_task_done) {
+        task = container_of(i, CRYPTO_THREAD_TASK, list);
+        if (task == task_id)
+            break;
+    }
+
+    if (task != task_id) {
+        LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+        Sleep(1000);
+        goto loop;
+    } else {
+        list_del(&task->list);
+        LeaveCriticalSection(&CRYPTO_THREAD_EXTERN_task_lock);
+    }
+
+    if (retval != NULL)
+        *retval = task->retval;
+
+    OPENSSL_free(task);
+    task = NULL;
+
+    return 1;
 }
 
-# ifndef CRYPTO_THREAD_EXTERN_exit
-#  define CRYPTO_THREAD_EXTERN_exit return
+#  ifndef CRYPTO_THREAD_EXTERN_exit
+#   define CRYPTO_THREAD_EXTERN_exit return
+#  endif
+
 # endif
 
 /** CRYPTO THREAD: Internal **/
@@ -119,9 +260,10 @@ int CRYPTO_THREAD_INTERN_disable()
 
 # endif
 
-void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void *data)
+void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void *data,
+                                unsigned long *ret)
 {
-    CRYPTO_THREAD * thread;
+    CRYPTO_THREAD_WIN * thread;
     LPTHREAD_START_ROUTINE start_routine = (LPTHREAD_START_ROUTINE) start;
 
     if (CRYPTO_THREAD_INTERN_enabled == 0)
@@ -135,6 +277,7 @@ void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void *data)
 
     *thread->handle = CreateThread(NULL, 0, start_routine, data, 0, NULL);
     if (thread->handle == NULL) {
+        *ret = GetLastError();
         OPENSSL_free(thread->handle);
         OPENSSL_free(thread);
         return NULL;
@@ -153,7 +296,7 @@ int CRYPTO_THREAD_INTERN_join(void * thread, unsigned long * retval)
     if (GetExitCodeThread(*thread_w->handle, (LPDWORD) &retval) == 0)
         return 0;
 
-    if (CloseHandle(*thread->handle) == 0)
+    if (CloseHandle(*thread_w->handle) == 0)
         return 0;
 
     return 1;

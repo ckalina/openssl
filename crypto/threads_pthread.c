@@ -32,7 +32,6 @@ volatile int CRYPTO_THREAD_EXTERN_enabled = 0;
 volatile int CRYPTO_THREAD_INTERN_enabled = 0;
 
 typedef struct {
-    CRYPTO_THREAD_CALLBACK callback;
     pthread_t * handle;
 } CRYPTO_THREAD_PTHREAD;
 
@@ -123,10 +122,10 @@ int CRYPTO_THREAD_EXTERN_disable()
 
 # endif /* ! OPENSSL_NO_EXTERN_THREAD */
 
-void * CRYPTO_THREAD_EXTERN_handle(void * data)
+static void* CRYPTO_THREAD_EXTERN_handle(void * data)
 {
     size_t task_cnt;
-    int (*cb)(size_t) = (int (*)(size_t))data;
+	CRYPTO_THREAD_CALLBACK cb = (CRYPTO_THREAD_CALLBACK)data;
 
     while(1) {
         pthread_mutex_lock(&CRYPTO_THREAD_EXTERN_task_lock);
@@ -159,7 +158,7 @@ void * CRYPTO_THREAD_EXTERN_handle(void * data)
     return NULL;
 }
 
-void * CRYPTO_THREAD_EXTERN_provide(int * ret, int (*cb)(size_t))
+void * CRYPTO_THREAD_EXTERN_provide(int * ret, CRYPTO_THREAD_CALLBACK cb)
 {
     CRYPTO_THREAD_PTHREAD * thread;
 
@@ -293,7 +292,7 @@ int CRYPTO_THREAD_INTERN_disable(void)
 # endif /* ! OPENSSL_NO_EXTERN_THREAD */
 
 void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void * data,
-                                int * ret)
+                                unsigned long * ret)
 {
     int retval;
 
