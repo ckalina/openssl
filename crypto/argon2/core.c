@@ -153,9 +153,8 @@ void NOT_OPTIMIZED secure_wipe_memory(void *v, size_t n)
 int FLAG_clear_internal_memory = 1;
 void clear_internal_memory(void *v, size_t n)
 {
-    if (FLAG_clear_internal_memory && v) {
-	secure_wipe_memory(v, n);
-    }
+    if (FLAG_clear_internal_memory && v)
+        secure_wipe_memory(v, n);
 }
 
 void finalize(const argon2_context *context, argon2_instance_t *instance)
@@ -263,7 +262,7 @@ uint32_t index_alpha(const argon2_instance_t *instance,
 
 #if !defined(ARGON2_NO_THREADS) && defined(OPENSSL_THREADS)
 
-static unsigned long __stdcall fill_segment_thr(void *thread_data)
+static unsigned long fill_segment_thr(void *thread_data)
 {
     argon2_thread_data *my_data = thread_data;
     fill_segment(my_data->instance_ptr, my_data->pos);
@@ -314,15 +313,15 @@ static int fill_memory_blocks_mt(argon2_instance_t *instance) {
                 position.slice = (uint8_t)s;
                 position.index = 0;
 
-		/* preparing the thread input */
+                /* preparing the thread input */
                 thr_data[l].instance_ptr = instance;
                 memcpy(&(thr_data[l].pos), &position,
-		       sizeof(argon2_position_t));
+                       sizeof(argon2_position_t));
 
-		thread[l] = CRYPTO_THREAD_new(&fill_segment_thr,
-					      (void*)&thr_data[l], NULL);
+                thread[l] = CRYPTO_THREAD_new(&fill_segment_thr,
+                                              (void*)&thr_data[l]);
 
-		if (thread[l] == NULL) {
+                if (thread[l] == NULL) {
                     /* Wait for already running threads */
                     for (ll = 0; ll < l; ++ll)
                         CRYPTO_THREAD_join(thread[ll], NULL);
@@ -375,14 +374,14 @@ static int fill_memory_blocks_st(argon2_instance_t *instance)
 
 int fill_memory_blocks(argon2_instance_t *instance)
 {
-    if (instance == NULL || instance->lanes == 0) {
-	return ARGON2_INCORRECT_PARAMETER;
-    }
-#if defined(ARGON2_NO_THREADS)
+    if (instance == NULL || instance->lanes == 0)
+        return ARGON2_INCORRECT_PARAMETER;
+
+#if defined(ARGON2_NO_THREADS) || !defined(OPENSSL_THREADS)
     return fill_memory_blocks_st(instance);
 #else
     return instance->threads == 1 ?
-	    fill_memory_blocks_st(instance) : fill_memory_blocks_mt(instance);
+        fill_memory_blocks_st(instance) : fill_memory_blocks_mt(instance);
 #endif
 }
 

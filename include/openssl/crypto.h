@@ -83,12 +83,14 @@ void CRYPTO_THREAD_lock_free(CRYPTO_RWLOCK *lock);
 int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
 
 typedef void (*CRYPTO_SIGNAL_CALLBACK)(int);
-int CRYPTO_SIGNAL_block(int signal, void (*callback)(int));
-
 typedef struct {
     int signal;
     CRYPTO_SIGNAL_CALLBACK callback;
 } CRYPTO_SIGNAL_PROPS;
+
+int CRYPTO_SIGNAL_block(int signal, void (*callback)(int));
+int CRYPTO_SIGNAL_block_set(CRYPTO_SIGNAL_PROPS** props);
+
 
 # if defined(OPENSSL_THREADS)
 
@@ -113,11 +115,10 @@ CRYPTO_THREAD CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start,
 CRYPTO_THREAD CRYPTO_THREAD_provide(CRYPTO_THREAD_CALLBACK cb);
 int CRYPTO_THREAD_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL* retval);
 int CRYPTO_THREAD_exit(CRYPTO_THREAD_RETVAL retval);
-int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS* props);
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS** props);
 int CRYPTO_THREAD_INTERN_disable(void);
-int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
+int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS** props);
 int CRYPTO_THREAD_EXTERN_disable(void);
-void* CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
 
 # endif /* OPENSSL_THREADS */
 

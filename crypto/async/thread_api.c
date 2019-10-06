@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,16 +7,22 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include "openssl/crypto.h"
+#include <openssl/e_os2.h>
+#include <openssl/crypto.h>
+#include <openssl/async.h>
+#include "thread_external.h"
+#include "thread_internal.h"
+
+#if defined(OPENSSL_THREADS)
 
 CRYPTO_THREAD CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start,
                                 CRYPTO_THREAD_DATA data)
 {
-    CRYPTO_THREAD thread;
+    CRYPTO_THREAD thread = NULL;
     if (CRYPTO_THREAD_EXTERN_enabled == 1)
         thread = CRYPTO_THREAD_EXTERN_add_job(start, data);
     else if (CRYPTO_THREAD_INTERN_enabled == 1)
-        thread = CRYPTO_THREAD_INTERN_new(start, data, ret);
+        thread = CRYPTO_THREAD_INTERN_new(start, data);
     return thread;
 }
 
@@ -44,5 +50,6 @@ int CRYPTO_THREAD_exit(CRYPTO_THREAD_RETVAL retval)
 
 CRYPTO_THREAD CRYPTO_THREAD_provide(CRYPTO_THREAD_CALLBACK cb)
 {
-    return CRYPTO_THREAD_EXTERN_provide(&ret, cb);
+    return CRYPTO_THREAD_EXTERN_provide(cb);
 }
+#endif

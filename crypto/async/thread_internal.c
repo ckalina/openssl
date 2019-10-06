@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,15 +7,18 @@
  * https://www.openssl.org/source/license.html
  */
 
+#include <openssl/e_os2.h>
 
+#if defined(OPENSSL_THREADS)
+# include <openssl/crypto.h>
 # include "thread.h"
 # include "thread_internal.h"
 
-int CRYPTO_THREAD_INTERN_enabled = 0;
+volatile int CRYPTO_THREAD_INTERN_enabled = 0;
 
 # ifdef OPENSSL_NO_INTERN_THREAD
 
-int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS* props)
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS** props)
 {
     return 0;
 }
@@ -24,9 +27,9 @@ int CRYPTO_THREAD_INTERN_disable(void)
 {
     return 1;
 }
-# else /* ! OPENSSL_NO_EXTERN_THREAD */
+# else /* ! OPENSSL_NO_INTERN_THREAD */
 
-int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS* props)
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS** props)
 {
     if (props == NULL)
         return 0;
@@ -57,16 +60,18 @@ int CRYPTO_THREAD_INTERN_disable()
 CRYPTO_THREAD CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE routine,
                                        CRYPTO_THREAD_DATA data)
 {
-    return thread_create(routine, data);
+    return CRYPTO_THREAD_arch_create(routine, data);
 }
 
 int CRYPTO_THREAD_INTERN_join(CRYPTO_THREAD thread,
                               CRYPTO_THREAD_RETVAL* retval)
 {
-    return thread_join(thread, retval);
+    return CRYPTO_THREAD_arch_join(thread, retval);
 }
 
 void CRYPTO_THREAD_INTERN_exit(CRYPTO_THREAD_RETVAL retval)
 {
-    thread_exit(retval);
+    CRYPTO_THREAD_arch_exit(retval);
 }
+
+#endif
