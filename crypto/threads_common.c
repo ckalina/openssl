@@ -1,5 +1,16 @@
+/*
+ * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
+ */
+
 #include "openssl/crypto.h"
 #include "internal/threads.h"
+
+#undef CRYPTO_THREAD_exit
 
 void * CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void* data,
                          unsigned long* ret)
@@ -23,6 +34,12 @@ int CRYPTO_THREAD_join(void* thread, unsigned long* retval)
 	if (CRYPTO_THREAD_INTERN_enabled == 1)
 		return CRYPTO_THREAD_INTERN_join(thread, retval);
 	return 0;
+}
+
+void CRYPTO_THREAD_exit(unsigned long retval)
+{
+    if (CRYPTO_THREAD_INTERN_enabled == 1)
+        CRYPTO_THREAD_INTERN_exit(retval);
 }
 
 long int CRYPTO_THREAD_provide(CRYPTO_THREAD_CALLBACK cb)

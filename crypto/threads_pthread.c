@@ -337,7 +337,7 @@ int CRYPTO_THREAD_INTERN_join(void * thread, unsigned long * retval)
 
 void CRYPTO_THREAD_INTERN_exit(unsigned long retval)
 {
-    pthread_exit((void*)retval);
+    pthread_exit((void*) retval);
 }
 
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
