@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
 #include <openssl/evp.h>
@@ -144,7 +145,10 @@ static int kdf_argon2_derive(void * vctx, unsigned char * out, size_t outlen)
         return 0;
     }
 
-    kdf_argon2_ctx_set_digest_length(ctx, outlen);
+    if (outlen > UINT32_MAX)
+        return 0;
+
+    kdf_argon2_ctx_set_digest_length(ctx, (uint32_t) outlen);
 
     int ret = ARGON2_Update(ctx, NULL, 0);
     if (ret != 1)
@@ -239,20 +243,21 @@ static int kdf_argon2_ctx_set_secret(argon2_context * ctx,
     if (ctx->secret != NULL) {
         OPENSSL_clear_free(ctx->secret, ctx->secretlen);
         ctx->secret = NULL;
-        ctx->secretlen = 0;
+        ctx->secretlen = 0U;
     }
 
     if (!OSSL_PARAM_get_octet_string(p, (void **)&ctx->secret, 0, &buflen))
         return 0;
 
-    if (buflen < ARGON2_MIN_SECRET || buflen > ARGON2_MAX_SECRET) {
+    if (buflen < ARGON2_MIN_SECRET || buflen > ARGON2_MAX_SECRET
+            || buflen > UINT32_MAX) {
         OPENSSL_free(ctx->secret);
         ctx->secret = NULL;
-        ctx->secretlen = 0;
+        ctx->secretlen = 0U;
         return 0;
     }
 
-    ctx->secretlen = buflen;
+    ctx->secretlen = (uint32_t) buflen;
     return 1;
 }
 
@@ -266,20 +271,21 @@ static int kdf_argon2_ctx_set_pwd(argon2_context * ctx, const OSSL_PARAM * p)
     if (ctx->pwd != NULL) {
         OPENSSL_clear_free(ctx->pwd, ctx->pwdlen);
         ctx->pwd = NULL;
-        ctx->pwdlen = 0;
+        ctx->pwdlen = 0U;
     }
 
     if (!OSSL_PARAM_get_octet_string(p, (void **)&ctx->pwd, 0, &buflen))
         return 0;
 
-    if (buflen < ARGON2_MIN_PWD_LENGTH || buflen > ARGON2_MAX_PWD_LENGTH) {
+    if (buflen < ARGON2_MIN_PWD_LENGTH || buflen > ARGON2_MAX_PWD_LENGTH
+            || buflen > UINT32_MAX) {
         OPENSSL_free(ctx->pwd);
         ctx->pwd = NULL;
-        ctx->pwdlen = 0;
+        ctx->pwdlen = 0U;
         return 0;
     }
 
-    ctx->pwdlen = buflen;
+    ctx->pwdlen = (uint32_t) buflen;
     return 1;
 }
 
@@ -293,20 +299,21 @@ static int kdf_argon2_ctx_set_salt(argon2_context * ctx, const OSSL_PARAM * p)
     if (ctx->salt != NULL) {
         OPENSSL_clear_free(ctx->salt, ctx->saltlen);
         ctx->salt = NULL;
-        ctx->saltlen = 0;
+        ctx->saltlen = 0U;
     }
 
     if (!OSSL_PARAM_get_octet_string(p, (void **)&ctx->salt, 0, &buflen))
         return 0;
 
-    if (buflen < ARGON2_MIN_SALT_LENGTH || buflen > ARGON2_MAX_SALT_LENGTH) {
+    if (buflen < ARGON2_MIN_SALT_LENGTH || buflen > ARGON2_MAX_SALT_LENGTH
+            || buflen > UINT32_MAX) {
         OPENSSL_free(ctx->salt);
         ctx->salt = NULL;
-        ctx->saltlen = 0;
+        ctx->saltlen = 0U;
         return 0;
     }
 
-    ctx->saltlen = buflen;
+    ctx->saltlen = (uint32_t) buflen;
     return 1;
 }
 
@@ -320,20 +327,21 @@ static int kdf_argon2_ctx_set_ad(argon2_context * ctx, const OSSL_PARAM * p)
     if (ctx->ad != NULL) {
         OPENSSL_clear_free(ctx->ad, ctx->adlen);
         ctx->ad = NULL;
-        ctx->adlen = 0;
+        ctx->adlen = 0U;
     }
 
     if (!OSSL_PARAM_get_octet_string(p, (void **)&ctx->ad, 0, &buflen))
         return 0;
 
-    if (buflen < ARGON2_MIN_AD_LENGTH || buflen > ARGON2_MAX_AD_LENGTH) {
+    if (buflen < ARGON2_MIN_AD_LENGTH || buflen > ARGON2_MAX_AD_LENGTH
+            || buflen > UINT32_MAX) {
         OPENSSL_free(ctx->ad);
         ctx->ad = NULL;
-        ctx->adlen = 0;
+        ctx->adlen = 0U;
         return 0;
     }
 
-    ctx->adlen = buflen;
+    ctx->adlen = (uint32_t) buflen;
     return 1;
 }
 

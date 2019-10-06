@@ -154,6 +154,7 @@ int    CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
 int    CRYPTO_THREAD_EXTERN_disable(void);
 void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
 
+/* @TODO rewrite this so that it is a function, and that INTERN_exit is visible! */
 /* Since `external' thread is actually just a function call from a handle,
  * one that we might wish to re-use, we cannot simply call native pthread/
  * WinAPI thread exit functions. To provide a uniform API, CRYPTO_THREAD_exit

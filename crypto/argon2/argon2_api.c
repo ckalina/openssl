@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <openssl/crypto.h>
 #include <internal/blake2.h>
@@ -27,7 +28,7 @@ typedef struct argon2_param ARGON2_PARAM;
 int ossl_alloc(uint8_t **memory, size_t bytes)
 {
     if (memory == NULL)
-	return -1;
+        return -1;
 
     *memory = OPENSSL_zalloc(bytes);
 
@@ -37,9 +38,9 @@ int ossl_alloc(uint8_t **memory, size_t bytes)
 void ossl_dealloc(uint8_t *memory, size_t bytes)
 {
     if (bytes)
-	OPENSSL_clear_free(memory, bytes);
+        OPENSSL_clear_free(memory, bytes);
     else
-	OPENSSL_free(memory);
+        OPENSSL_free(memory);
 }
 
 int ARGON2_Init(ARGON2_CTX *c, argon2_type type)
@@ -92,9 +93,12 @@ int ARGON2_Init(ARGON2_CTX *c, argon2_type type)
 
 int ARGON2_Update(ARGON2_CTX *context, uint8_t *data, size_t datalen)
 {
+    if (datalen > UINT32_MAX)
+        return 0;
+
     if (data) {
-	    context->pwd = data;
-	    context->pwdlen = datalen;
+        context->pwd = data;
+        context->pwdlen = (uint32_t) datalen;
     }
 
     context->out = OPENSSL_zalloc(context->outlen+1);
