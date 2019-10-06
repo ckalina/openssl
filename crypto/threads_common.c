@@ -1,4 +1,5 @@
 #include "openssl/crypto.h"
+#include "internal/threads.h"
 
 void * CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void* data,
                          unsigned long* ret)

@@ -10,8 +10,8 @@
 #include <signal.h>
 #include "e_os.h"
 #include <openssl/crypto.h>
-#include <openssl/list.h>
 #include "internal/cryptlib.h"
+#include "internal/threads.h"
 
 #if defined(__sun)
 # include <atomic.h>

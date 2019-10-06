@@ -12,6 +12,7 @@
 #endif
 
 #include <openssl/crypto.h>
+#include "internal/threads.h"
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
@@ -55,13 +56,13 @@ int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS *props)
     if (props == NULL)
         return 0;
 
-    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c) != 1)
         goto fail;
 
-    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break) != 1)
         goto fail;
 
-    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close) != 1)
         goto fail;
 
     list_init(&CRYPTO_THREAD_EXTERN_task_queue);
@@ -222,21 +223,21 @@ int CRYPTO_THREAD_INTERN_disable(void)
 
 # else /* ! OPENSSL_NO_EXTERN_THREAD */
 
-extern CRYPTO_SIGNAL_CALLBACK cb_ctrl_c_event;
-extern CRYPTO_SIGNAL_CALLBACK cb_break_event;
+extern CRYPTO_SIGNAL_CALLBACK cb_ctrl_c;
+extern CRYPTO_SIGNAL_CALLBACK cb_break;
 
 int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS *props)
 {
     if (props == NULL)
         return 0;
 
-    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_C_EVENT, props->cb_ctrl_c) != 1)
         goto fail;
 
-    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_BREAK_EVENT, props->cb_ctrl_break) != 1)
         goto fail;
 
-    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close_event) != 1)
+    if (CRYPTO_SIGNAL_block(CTRL_CLOSE_EVENT, props->cb_ctrl_close) != 1)
         goto fail;
 
     CRYPTO_THREAD_INTERN_enabled = 1;

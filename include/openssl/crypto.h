@@ -154,14 +154,6 @@ int    CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
 int    CRYPTO_THREAD_EXTERN_disable(void);
 void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
 
-static void * CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void * data,
-                                       unsigned long * ret);
-static int    CRYPTO_THREAD_INTERN_join(void * thread, unsigned long * retval);
-static void   CRYPTO_THREAD_INTERN_exit(unsigned long retval);
-
-static void * CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void * data);
-static int    CRYPTO_THREAD_EXTERN_join(void * task_id, unsigned long * retval);
-
 /* Since `external' thread is actually just a function call from a handle,
  * one that we might wish to re-use, we cannot simply call native pthread/
  * WinAPI thread exit functions. To provide a uniform API, CRYPTO_THREAD_exit
@@ -174,7 +166,6 @@ static int    CRYPTO_THREAD_EXTERN_join(void * task_id, unsigned long * retval);
     } while(0)
 
 # endif /* OPENSSL_THREADS */
-
 
 /*
  * The following can be used to detect memory leaks in the library. If
