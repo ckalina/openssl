@@ -1,4 +1,4 @@
 LIBS=../../libcrypto
 SOURCE[../../libcrypto]=\
-        async.c async_wait.c async_err.c arch/async_posix.c arch/async_win.c \
-        arch/async_null.c
+        fibre.c fibre_wait.c fibre_err.c arch/fibre_posix.c arch/fibre_win.c \
+        arch/fibre_null.c
