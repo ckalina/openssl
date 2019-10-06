@@ -135,5 +135,21 @@ fail:
     return 0;
 }
 
+int CRYPTO_SIGNAL_block_set(CRYPTO_SIGNAL_PROPS* props)
+{
+    CRYPTO_SIGNAL_PROPS* props_iter;
+    for (props_iter = props; *props != NULL; ++props_iter)
+        if (CRYPTO_SIGNAL_block(props_iter->signal, props_iter->callback) != 1)
+            goto fail;
+
+    return 1;
+
+fail:
+    for (; prop_iter != props; --prop_iter)
+        if (CRYPTO_SIGNAL_block(props_iter->signal, NULL) != 1)
+            goto fail;
+    return 0;
+}
+
 #endif
 

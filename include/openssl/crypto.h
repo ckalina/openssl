@@ -24,8 +24,6 @@
 # include <stdlib.h>
 # include <time.h>
 
-# include <openssl/e_os2.h>
-
 # ifndef OPENSSL_NO_STDIO
 #  include <stdio.h>
 # endif
@@ -87,73 +85,39 @@ int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
 typedef void (*CRYPTO_SIGNAL_CALLBACK)(int);
 int CRYPTO_SIGNAL_block(int signal, void (*callback)(int));
 
-/* @TODO change this to OSSL_PARAMS: */
 typedef struct {
-    union {
-    struct {
-        CRYPTO_SIGNAL_CALLBACK cb_sigint;
-        CRYPTO_SIGNAL_CALLBACK cb_sigterm;
-    };
-    struct {
-        CRYPTO_SIGNAL_CALLBACK cb_ctrl_c;
-        CRYPTO_SIGNAL_CALLBACK cb_ctrl_break;
-        CRYPTO_SIGNAL_CALLBACK cb_ctrl_close;
-    };
-};
+    int signal;
+    CRYPTO_SIGNAL_CALLBACK callback;
 } CRYPTO_SIGNAL_PROPS;
 
 # if defined(OPENSSL_THREADS)
-
-#  include <internal/list.h>
 
 #  if (_MSC_VER < 800) && !defined(_STDCALL_SUPPORTED)
 #   define CALLBACK
 #  endif
 
-/**
- * Routine to be executed in a thread.
- */
-typedef unsigned long (CALLBACK *CRYPTO_THREAD_ROUTINE)(void *);
+typedef unsigned long CRYPTO_THREAD_RETVAL;
+
+typedef CRYPTO_THREAD_RETVAL (CALLBACK *CRYPTO_THREAD_ROUTINE)(void *);
 typedef int (*CRYPTO_THREAD_CALLBACK)(size_t);
-
-/*
- * Generic CRYPTO_THREAD object. Both pthread and windows threads use
- * their own specialized instances.
- */
-typedef void * CRYPTO_THREAD;
-
-typedef struct {
-    CRYPTO_THREAD_ROUTINE    task;
-    void                   * data;
-    unsigned long            retval;
-    struct list              list;
-} CRYPTO_THREAD_TASK;
-
-/*****************************************************************************
- *
- * The following globals indicate whether application using OpenSSL has
- * explicitly approved use of threads, internal or external.
- *
- ****************************************************************************/
-
-#  ifndef CRYPTO_THREAD_EINVAL
-#   define CRYPTO_THREAD_EINVAL -1
-#  endif
+typedef void* CRYPTO_THREAD_DATA;
+typedef void* CRYPTO_THREAD;
+typedef void* CRYPTO_MUTEX;
+typedef void* CRYPTO_CONDVAR;
 
 extern volatile int CRYPTO_THREAD_INTERN_enabled;
 extern volatile int CRYPTO_THREAD_EXTERN_enabled;
 
-void * CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start, void* data,
-                         unsigned long* ret);
-int    CRYPTO_THREAD_join(void* thread, unsigned long* retval);
-int    CRYPTO_THREAD_exit(unsigned long retval);
-
-int    CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS * props);
-int    CRYPTO_THREAD_INTERN_disable(void);
-
-int    CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
-int    CRYPTO_THREAD_EXTERN_disable(void);
-void * CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
+CRYPTO_THREAD CRYPTO_THREAD_new(CRYPTO_THREAD_ROUTINE start,
+                                CRYPTO_THREAD_DATA data);
+CRYPTO_THREAD CRYPTO_THREAD_provide(CRYPTO_THREAD_CALLBACK cb);
+int CRYPTO_THREAD_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL* retval);
+int CRYPTO_THREAD_exit(CRYPTO_THREAD_RETVAL retval);
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS* props);
+int CRYPTO_THREAD_INTERN_disable(void);
+int CRYPTO_THREAD_EXTERN_enable(CRYPTO_SIGNAL_PROPS* props);
+int CRYPTO_THREAD_EXTERN_disable(void);
+void* CRYPTO_THREAD_EXTERN_provide(int* ret, CRYPTO_THREAD_CALLBACK cb);
 
 # endif /* OPENSSL_THREADS */
 

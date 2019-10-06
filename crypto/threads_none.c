@@ -17,9 +17,6 @@
 #  include <unistd.h>
 # endif
 
-volatile int CRYPTO_THREAD_EXTERN_enabled = 0;
-volatile int CRYPTO_THREAD_INTERN_enabled = 0;
-
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
     CRYPTO_RWLOCK *lock;
