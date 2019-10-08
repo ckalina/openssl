@@ -84,10 +84,8 @@ int CRYPTO_SIGNAL_block(int signal, CRYPTO_SIGNAL_CALLBACK cb)
     return 1;
 }
 
-#endif
-
-#if defined(OPENSSL_SYS_UNIX) || defined (__unix__) || \
-   (defined (__APPLE__) && defined (__MACH__))
+#elif defined(OPENSSL_SYS_UNIX) || defined (__unix__) || \
+      (defined (__APPLE__) && defined (__MACH__))
 
 # include <sys/types.h>
 # include <unistd.h>
@@ -135,6 +133,17 @@ fail:
     return 0;
 }
 
+#else
+
+int CRYPTO_SIGNAL_block(int signal, void (*callback)(int))
+{
+    (void)signal;
+    (void)callback;
+    return 0;
+}
+
+#endif
+
 int CRYPTO_SIGNAL_block_set(CRYPTO_SIGNAL_PROPS** props)
 {
     int r;
@@ -153,6 +162,3 @@ fail:
             goto fail;
     return 0;
 }
-
-#endif
-

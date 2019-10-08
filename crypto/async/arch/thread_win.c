@@ -37,7 +37,7 @@ CRYPTO_THREAD CRYPTO_THREAD_arch_create(CRYPTO_THREAD_ROUTINE routine,
         return NULL;
 
     thread->routine = routine;
-    thread->data = arg;
+    thread->data = data;
 
     *thread->handle = CreateThread(NULL, 0, thread_call_routine,
                                    (LPVOID)thread, 0, NULL);
@@ -83,7 +83,7 @@ void CRYPTO_THREAD_arch_exit(CRYPTO_THREAD_RETVAL retval)
 
 CRYPTO_MUTEX CRYPTO_MUTEX_create(void)
 {
-    CRYPTO_MUTEX_POSIX* mutex;
+    CRYPTO_MUTEX_WIN* mutex;
     if ((mutex = OPENSSL_zalloc(sizeof(*mutex))) == NULL)
         return NULL;
     return (CRYPTO_MUTEX)mutex;
@@ -91,26 +91,26 @@ CRYPTO_MUTEX CRYPTO_MUTEX_create(void)
 
 int CRYPTO_MUTEX_init(CRYPTO_MUTEX mutex)
 {
-    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_POSIX*)mutex;
+    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_WIN*)mutex;
     InitializeCriticalSection(mutex_p);
     return 1;
 }
 
 void CRYPTO_MUTEX_lock(CRYPTO_MUTEX mutex)
 {
-    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_POSIX*)mutex;
+    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_WIN*)mutex;
     EnterCriticalSection(mutex_p);
 }
 
 void CRYPTO_MUTEX_unlock(CRYPTO_MUTEX mutex)
 {
-    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_POSIX*)mutex;
+    CRYPTO_MUTEX_WIN* mutex_p = (CRYPTO_MUTEX_WIN*)mutex;
     LeaveCriticalSection(mutex_p);
 }
 
 void CRYPTO_MUTEX_destroy(CRYPTO_MUTEX* mutex)
 {
-    CRYPTO_MUTEX_WIN** mutex_p = (CRYPTO_MUTEX_POSIX**)mutex;
+    CRYPTO_MUTEX_WIN** mutex_p = (CRYPTO_MUTEX_WIN**)mutex;
     DeleteCriticalSection(*mutex_p);
     OPENSSL_free(*mutex_p);
     *mutex = NULL;
@@ -119,7 +119,7 @@ void CRYPTO_MUTEX_destroy(CRYPTO_MUTEX* mutex)
 CRYPTO_CONDVAR CRYPTO_CONDVAR_create(void)
 {
     CRYPTO_CONDVAR_WIN* cv_p;
-    if ((mutex = OPENSSL_zalloc(sizeof(*cv_p))) == NULL)
+    if ((cv_p = OPENSSL_zalloc(sizeof(*cv_p))) == NULL)
         return NULL;
     return (CRYPTO_CONDVAR)cv_p;
 }
@@ -144,10 +144,9 @@ void CRYPTO_CONDVAR_broadcast(CRYPTO_CONDVAR cv)
     WakeAllConditionVariable(cv_p);
 }
 
-void CRYPTO_CONDVAR_destroy(CRYPTO_CONDVAR cv)
+void CRYPTO_CONDVAR_destroy(CRYPTO_CONDVAR* cv)
 {
-    CRYPTO_CONDVAR_WIN* cv_p = (CRYPTO_CONDVAR_WIN*)cv;
-    DeleteCriticalSection(cv_p);
+    CRYPTO_CONDVAR_WIN** cv_p = (CRYPTO_CONDVAR_WIN**)cv;
     OPENSSL_free(*cv_p);
     *cv_p = NULL;
 }
