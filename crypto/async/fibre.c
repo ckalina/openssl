@@ -16,7 +16,7 @@
 #undef _FORTIFY_SOURCE
 
 /* This must be the first #include file */
-#include "async_local.h"
+#include "fibre_local.h"
 
 #include <openssl/err.h>
 #include "crypto/cryptlib.h"
