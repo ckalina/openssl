@@ -4843,3 +4843,6 @@ CRYPTO_SIGNAL_block_set                 4959	3_0_0	EXIST::FUNCTION:
 CRYPTO_THREAD_provide                   4960	3_0_0	EXIST::FUNCTION:
 CRYPTO_THREAD_join                      4961	3_0_0	EXIST::FUNCTION:
 CRYPTO_THREAD_exit                      4962	3_0_0	EXIST::FUNCTION:
+CRYPTO_SIGNAL_unblock_all               4963	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_state                     4964	3_0_0	EXIST::FUNCTION:
+CRYPTO_THREAD_clean                     4965	3_0_0	EXIST::FUNCTION:

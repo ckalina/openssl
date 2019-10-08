@@ -13,8 +13,10 @@
 #  pragma once
 
 CRYPTO_THREAD CRYPTO_THREAD_INTERN_new(CRYPTO_THREAD_ROUTINE start, void* data);
-int CRYPTO_THREAD_INTERN_join(void* thread, unsigned long* retval);
+int CRYPTO_THREAD_INTERN_join(CRYPTO_THREAD thread,
+                              unsigned long* retval);
 void CRYPTO_THREAD_INTERN_exit(unsigned long retval);
+int CRYPTO_THREAD_INTERN_clean(CRYPTO_THREAD* thread);
 
 # endif
 #endif

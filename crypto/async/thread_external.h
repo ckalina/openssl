@@ -24,15 +24,22 @@ enum {
 };
 
 typedef struct {
-    CRYPTO_THREAD_ROUTINE    task;
-    void* data;
-    unsigned long            retval;
-    struct list              list;
+    CRYPTO_THREAD_STATE   state;
+
+    /* handle has no meaning for jobs, kept around to maintain ABI and
+     * to force that CRYPTO_THREAD object produced by external threads
+     * is not used with internal methods by accident; kept NULL */
+    void*                 handle;
+    CRYPTO_THREAD_ROUTINE task;
+    void*                 data;
+    unsigned long         retval;
+    struct list           list;
 } CRYPTO_THREAD_TASK;
 
-void* CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void* data);
-int   CRYPTO_THREAD_EXTERN_join(void* task_id, unsigned long* retval);
+CRYPTO_THREAD CRYPTO_THREAD_EXTERN_add_job(CRYPTO_THREAD_ROUTINE task, void* data);
+int   CRYPTO_THREAD_EXTERN_join(CRYPTO_THREAD task_id, unsigned long* retval);
 CRYPTO_THREAD CRYPTO_THREAD_EXTERN_provide(CRYPTO_THREAD_CALLBACK cb);
+int CRYPTO_THREAD_EXTERN_clean(CRYPTO_THREAD* thread);
 
 # endif
 #endif

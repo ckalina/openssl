@@ -18,7 +18,7 @@ volatile int CRYPTO_THREAD_INTERN_enabled = 0;
 
 # ifdef OPENSSL_NO_INTERN_THREAD
 
-int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS** props)
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL** props)
 {
     return 0;
 }
@@ -29,15 +29,12 @@ int CRYPTO_THREAD_INTERN_disable(void)
 }
 # else /* ! OPENSSL_NO_INTERN_THREAD */
 
-int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL_PROPS** props)
+int CRYPTO_THREAD_INTERN_enable(CRYPTO_SIGNAL** props)
 {
-    if (props == NULL)
-        return 0;
-
     if (CRYPTO_THREAD_INTERN_enabled == 1)
         return 1;
 
-    if (CRYPTO_SIGNAL_block_set(props) != 1)
+    if (props != NULL && CRYPTO_SIGNAL_block_set(props) != 1)
         goto fail;
 
     CRYPTO_THREAD_INTERN_enabled = 1;
@@ -50,7 +47,6 @@ fail:
 
 int CRYPTO_THREAD_INTERN_disable()
 {
-    /* @TODO unblock signals */
     CRYPTO_THREAD_INTERN_enabled = 0;
     return 1;
 }
@@ -72,6 +68,26 @@ int CRYPTO_THREAD_INTERN_join(CRYPTO_THREAD thread,
 void CRYPTO_THREAD_INTERN_exit(CRYPTO_THREAD_RETVAL retval)
 {
     CRYPTO_THREAD_arch_exit(retval);
+}
+
+int CRYPTO_THREAD_INTERN_clean(CRYPTO_THREAD* thread)
+{
+    switch(CRYPTO_THREAD_state(*thread)) {
+    case CRYPTO_THREAD_STOPPED:
+    case CRYPTO_THREAD_FAILED:
+        break;
+    default:
+        return 0;
+    }
+
+    CRYPTO_THREAD loc = *thread;
+    *thread = NULL;
+    CRYPTO_mem_barrier();
+    OPENSSL_free(loc->handle);
+    loc->handle = NULL;
+    CRYPTO_mem_barrier();
+    OPENSSL_free(loc);
+    return 1;
 }
 
 #endif

@@ -20,10 +20,11 @@
 #include <unistd.h>
 
 typedef struct {
+    CRYPTO_THREAD_STATE   state;
+    pthread_t*            handle;
     CRYPTO_THREAD_ROUTINE routine;
     CRYPTO_THREAD_DATA    data;
     CRYPTO_THREAD_RETVAL  retval;
-    pthread_t*            handle;
 } CRYPTO_THREAD_POSIX;
 
 typedef pthread_mutex_t CRYPTO_MUTEX_POSIX;

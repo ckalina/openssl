@@ -18,7 +18,9 @@
 static void* thread_call_routine(void* param)
 {
     CRYPTO_THREAD_POSIX* thread = (CRYPTO_THREAD_POSIX*)param;
+    thread->state = CRYPTO_THREAD_RUNNING;
     thread->retval = thread->routine(thread->data);
+    thread->state = CRYPTO_THREAD_STOPPED;
     return NULL;
 }
 
@@ -28,7 +30,7 @@ CRYPTO_THREAD CRYPTO_THREAD_arch_create(CRYPTO_THREAD_ROUTINE routine,
     int retval;
     CRYPTO_THREAD_POSIX* thread;
 
-    if (CRYPTO_THREAD_EXTERN_enabled != 1)
+    if (CRYPTO_THREAD_EXTERN_enabled != 1 && CRYPTO_THREAD_INTERN_enabled != 1)
         return NULL;
 
     if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
@@ -40,9 +42,10 @@ CRYPTO_THREAD CRYPTO_THREAD_arch_create(CRYPTO_THREAD_ROUTINE routine,
     thread->routine = routine;
     thread->data = data;
 
-    retval = pthread_create(thread->handle, NULL, thread_call_routine, data);
+    retval = pthread_create(thread->handle, NULL, thread_call_routine, thread);
 
     if (retval != 0 || thread->handle == NULL) {
+        thread->state = CRYPTO_THREAD_FAILED;
         OPENSSL_free(thread->handle);
         OPENSSL_free(thread);
         return NULL;
@@ -59,6 +62,9 @@ int CRYPTO_THREAD_arch_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL* retval)
         return 0;
 
     CRYPTO_THREAD_POSIX* thread_p = (CRYPTO_THREAD_POSIX*)thread;
+
+    if (thread_p->handle == NULL)
+        return 0;
 
     if (pthread_join(*thread_p->handle, &retval_intern) != 0)
         return 0;

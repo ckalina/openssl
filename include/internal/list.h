@@ -16,6 +16,12 @@
 #define container_of(ptr, type, member) \
     ((type *)((char *)ptr - offsetof(type, member)))
 
+#define list_for_each(iter, head) \
+    for (iter = (head)->next; iter != (head); iter = iter->next)
+
+#define list_for_each_r(iter, head) \
+    for (iter = (head)->prev; iter != (head); iter = iter->prev)
+
 struct list {
     struct list *next, *prev;
 };
@@ -64,7 +70,26 @@ static inline void list_del(struct list *entry)
     prev->next = next;
 }
 
-#define list_for_each(iter, head) \
-    for (iter = (head)->next; iter != (head); iter = iter->next)
+static inline struct list* list_find(struct list *entry,
+                                     int (*eq)(struct list*, void*),
+                                     void *data)
+{
+    struct list *iter;
+    list_for_each(iter, entry)
+        if (eq(iter, data))
+            return iter;
+    return NULL;
+}
+
+static inline struct list* list_rfind(struct list *entry,
+                                      int (*eq)(struct list*, void*),
+                                      void *data)
+{
+    struct list *iter;
+    list_for_each_r(iter, entry)
+        if (eq(iter, data))
+            return iter;
+    return NULL;
+}
 
 #endif

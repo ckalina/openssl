@@ -19,10 +19,11 @@
 #include <windows.h>
 
 typedef struct {
+    CRYPTO_THREAD_STATE   state;
+    HANDLE*               handle;
     CRYPTO_THREAD_ROUTINE routine;
     CRYPTO_THREAD_DATA    data;
     CRYPTO_THREAD_RETVAL  retval;
-    HANDLE*               handle;
 } CRYPTO_THREAD_WIN;
 
 typedef CRITICAL_SECTION CRYPTO_MUTEX_WIN;

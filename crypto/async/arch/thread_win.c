@@ -18,7 +18,9 @@
 static DWORD WINAPI thread_call_routine(LPVOID param)
 {
     CRYPTO_THREAD_WIN* thread = (CRYPTO_THREAD_WIN*) param;
+    thread->state = CRYPTO_THREAD_RUNNING;
     thread->retval = thread->routine(thread->data);
+    thread->state = CRYPTO_THREAD_STOPPED;
     return 0L;
 }
 
@@ -27,7 +29,7 @@ CRYPTO_THREAD CRYPTO_THREAD_arch_create(CRYPTO_THREAD_ROUTINE routine,
 {
     CRYPTO_THREAD_WIN * thread;
 
-    if (CRYPTO_THREAD_EXTERN_enabled != 1)
+    if (CRYPTO_THREAD_EXTERN_enabled != 1 && CRYPTO_THREAD_INTERN_enabled != 1)
         return NULL;
 
     if ((thread = OPENSSL_zalloc(sizeof(*thread))) == NULL)
@@ -59,6 +61,9 @@ int CRYPTO_THREAD_arch_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL* retval)
         return 0;
 
     CRYPTO_THREAD_WIN* thread_w = (CRYPTO_THREAD_WIN*)thread;
+
+    if (thread_w->handle == NULL)
+        return 0;
 
     if (WaitForSingleObject(*thread_w->handle, INFINITE) != WAIT_OBJECT_0)
         return 0;
