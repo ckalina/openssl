@@ -1208,3 +1208,6 @@ x942kdf		1207
 id_on_SmtpUTF8Mailbox		1208
 XmppAddr		1209
 SRVName		1210
+argon2i		1211
+argon2d		1212
+argon2id		1213
