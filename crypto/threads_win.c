@@ -12,6 +12,7 @@
 #endif
 
 #include <openssl/crypto.h>
+#include <openssl/async.h>
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
