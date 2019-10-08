@@ -178,6 +178,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
     list_add_tail(&s->list, &siglist);
 
     s->p.callback = p->callback;
+    s->p.signal = p->signal;
     if (CRYPTO_SIGNAL_block_arch(p) == 0)
         return 0;
 
