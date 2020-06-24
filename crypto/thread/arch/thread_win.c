@@ -30,7 +30,9 @@
  */
 static DWORD __stdcall thread_start_thunk(LPVOID vthread)
 {
-    CRYPTO_THREAD thread = (CRYPTO_THREAD) vthread;
+    CRYPTO_THREAD thread;
+
+    thread = (CRYPTO_THREAD) vthread;
     CRYPTO_THREAD_SET_STATE(thread, CRYPTO_THREAD_RUNNING);
     thread->thread_id = GetCurrentThreadId();
     thread->retval = thread->routine(thread->data);

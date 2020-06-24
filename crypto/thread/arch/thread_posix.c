@@ -25,7 +25,9 @@
  */
 static void *thread_start_thunk(void *vthread)
 {
-    CRYPTO_THREAD thread = (CRYPTO_THREAD) vthread;
+    CRYPTO_THREAD thread;
+   
+    thread = (CRYPTO_THREAD) vthread;
     CRYPTO_THREAD_SET_STATE(thread, CRYPTO_THREAD_RUNNING);
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);

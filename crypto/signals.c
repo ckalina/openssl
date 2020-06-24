@@ -190,6 +190,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
 int CRYPTO_SIGNAL_block_set(CRYPTO_SIGNAL** props)
 {
     int r;
+
     CRYPTO_SIGNAL** props_iter;
     for (props_iter = props; *props_iter != NULL; ++props_iter) {
         r = CRYPTO_SIGNAL_block(*props_iter);
@@ -216,6 +217,7 @@ int CRYPTO_SIGNAL_unblock_all(void)
 {
     struct list *iter;
     struct sigentry * e;
+
     if (siglist.prev == NULL || siglist.next == NULL)
         return 0;
     list_for_each(iter, &siglist) {

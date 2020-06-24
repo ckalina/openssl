@@ -48,10 +48,12 @@ CRYPTO_THREAD crypto_thread_native_start(CRYPTO_THREAD_ROUTINE routine,
 
 int crypto_thread_native_clean(CRYPTO_THREAD handle)
 {
+    uint64_t req_state_mask;
+
     if (handle == NULL)
         return 0;
 
-    uint64_t req_state_mask = 0;
+    req_state_mask = 0;
     req_state_mask |= CRYPTO_THREAD_FINISHED;
     req_state_mask |= CRYPTO_THREAD_TERMINATED;
     req_state_mask |= CRYPTO_THREAD_JOINED;

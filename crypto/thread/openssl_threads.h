@@ -71,6 +71,7 @@ static const OPENSSL_CTX_METHOD openssl_threads_method = {
 static void openssl_threads_free(void *vdata)
 {
     OPENSSL_CTX_THREADS t = vdata;
+
     if (t == NULL)
         return;
 
