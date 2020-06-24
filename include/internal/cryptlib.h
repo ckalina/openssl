@@ -159,7 +159,8 @@ typedef struct ossl_ex_data_global_st {
 # define OPENSSL_CTX_SELF_TEST_CB_INDEX            11
 # define OPENSSL_CTX_BIO_PROV_INDEX                12
 # define OPENSSL_CTX_GLOBAL_PROPERTIES             13
-# define OPENSSL_CTX_MAX_INDEXES                   14
+# define OPENSSL_CTX_THREAD_INDEX                  14
+# define OPENSSL_CTX_MAX_INDEXES                   15
 
 typedef struct openssl_ctx_method {
     void *(*new_func)(OPENSSL_CTX *ctx);
