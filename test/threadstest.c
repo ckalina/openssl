@@ -189,7 +189,7 @@ static int test_thread_local(void)
 
 #if defined(OPENSSL_THREADS)
 
-uint32_t fn1_glob;
+static uint32_t fn1_glob;
 static uint32_t test_thread_native_fn(void *data)
 {
     ossl_sleep(10000);
