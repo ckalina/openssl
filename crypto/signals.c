@@ -33,7 +33,7 @@ static ossl_inline int siglist_sigeq(struct list *l, void *data)
 
 volatile PHANDLER_ROUTINE callback_handler = NULL;
 
-static BOOL WINAPI CRYPTO_SIGNAL_handler(DWORD dwType)
+static BOOL WINAPI crypto_signal_handler(DWORD dwType)
 {
     if (list_empty(&siglist))
         return FALSE;
@@ -46,15 +46,15 @@ static BOOL WINAPI CRYPTO_SIGNAL_handler(DWORD dwType)
     return TRUE;
 }
 
-static int CRYPTO_SIGNAL_arch_enable()
+static int crypto_signal_arch_enable(void)
 {
-    callback_handler = (PHANDLER_ROUTINE) CRYPTO_SIGNAL_handler;
+    callback_handler = (PHANDLER_ROUTINE) crypto_signal_handler;
     if (SetConsoleCtrlHandler(callback_handler, TRUE) == 0)
         return 0;
     return 1;
 }
 
-static int CRYPTO_SIGNAL_arch_disable()
+static int crypto_signal_arch_disable(void)
 {
     if (SetConsoleCtrlHandler(callback_handler, FALSE) == 0) {
         callback_handler = NULL;
@@ -63,7 +63,7 @@ static int CRYPTO_SIGNAL_arch_disable()
     return 1;
 }
 
-static int CRYPTO_SIGNAL_block_arch(CRYPTO_SIGNAL *p)
+static int crypto_signal_arch_block(CRYPTO_SIGNAL *p)
 {
     return 1;
 }
@@ -75,12 +75,12 @@ static int CRYPTO_SIGNAL_block_arch(CRYPTO_SIGNAL *p)
 # include <unistd.h>
 # include <signal.h>
 
-static int CRYPTO_SIGNAL_arch_enable(void)
+static int crypto_signal_arch_enable(void)
 {
     return 1;
 }
 
-static int CRYPTO_SIGNAL_arch_disable(void)
+static int crypto_signal_arch_disable(void)
 {
     return 1;
 }
@@ -92,7 +92,7 @@ static int CRYPTO_SIGNAL_arch_disable(void)
  *     SIG_IGN         blocks signal (if possible)
  *     void (*)(int)   masks signal and calls a callback upon receive
  */
-static int CRYPTO_SIGNAL_block_arch(CRYPTO_SIGNAL *p)
+static int crypto_signal_arch_block(CRYPTO_SIGNAL *p)
 {
     int how;
     sigset_t sigs;
@@ -133,17 +133,17 @@ fail:
 
 #else
 
-static int CRYPTO_SIGNAL_arch_enable()
+static int crypto_signal_arch_enable(void)
 {
     return 0;
 }
 
-static int CRYPTO_SIGNAL_arch_disable()
+static int crypto_signal_arch_disable(void)
 {
     return 0;
 }
 
-static int CRYPTO_SIGNAL_block_arch(CRYPTO_SIGNAL *p)
+static int crypto_signal_arch_block(CRYPTO_SIGNAL *p)
 {
     return 0;
 }
@@ -160,7 +160,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
     if (list_empty(&siglist)) {
         if (p->callback == NULL)
             return 1;
-        else if (CRYPTO_SIGNAL_arch_enable() == 0)
+        else if (crypto_signal_arch_enable() == 0)
             return 0;
     } else {
         struct list *l;
@@ -171,7 +171,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
     if (s && p->callback == NULL) {
         list_del(&s->list);
         OPENSSL_free(s);
-        if (list_empty(&siglist) && CRYPTO_SIGNAL_arch_disable() == 0)
+        if (list_empty(&siglist) && crypto_signal_arch_disable() == 0)
             return 0;
         return 1;
     }
@@ -181,7 +181,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
 
     s->p.callback = p->callback;
     s->p.signal = p->signal;
-    if (CRYPTO_SIGNAL_block_arch(p) == 0)
+    if (crypto_signal_arch_block(p) == 0)
         return 0;
 
     return 1;
@@ -212,7 +212,7 @@ fail:
     return 0;
 }
 
-int CRYPTO_SIGNAL_unblock_all()
+int CRYPTO_SIGNAL_unblock_all(void)
 {
     struct list *iter;
     struct sigentry * e;

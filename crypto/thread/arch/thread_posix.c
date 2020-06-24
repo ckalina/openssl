@@ -34,7 +34,7 @@ static void *thread_start_thunk(void *vthread)
     return NULL;
 }
 
-int CRYPTO_THREAD_native_spawn(CRYPTO_THREAD thread)
+int crypto_thread_native_spawn(CRYPTO_THREAD thread)
 {
     int ret;
     pthread_attr_t attr;
@@ -65,7 +65,7 @@ fail:
     return 0;
 }
 
-int CRYPTO_THREAD_native_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL *retval)
+int crypto_thread_native_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL *retval)
 {
     void *thread_retval;
     CRYPTO_THREAD_POSIX *handle;
@@ -114,7 +114,7 @@ fail:
     return 0;
 }
 
-int CRYPTO_THREAD_native_terminate(CRYPTO_THREAD thread)
+int crypto_thread_native_terminate(CRYPTO_THREAD thread)
 {
     uint64_t mask;
     pthread_t *handle;
@@ -144,13 +144,13 @@ int CRYPTO_THREAD_native_terminate(CRYPTO_THREAD thread)
     return 1;
 }
 
-int CRYPTO_THREAD_native_exit()
+int crypto_thread_native_exit()
 {
     pthread_exit(NULL);
     return 1;
 }
 
-int CRYPTO_THREAD_native_is_self(CRYPTO_THREAD thread)
+int crypto_thread_native_is_self(CRYPTO_THREAD thread)
 {
     return pthread_equal(*(pthread_t*)thread->handle, pthread_self());
 }

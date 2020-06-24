@@ -12,7 +12,7 @@
 #if defined(OPENSSL_THREADS)
 # include <internal/thread.h>
 
-CRYPTO_THREAD CRYPTO_THREAD_native_start(CRYPTO_THREAD_ROUTINE routine,
+CRYPTO_THREAD crypto_thread_native_start(CRYPTO_THREAD_ROUTINE routine,
                                          void *data, int joinable)
 {
     struct crypto_thread_st *handle;
@@ -35,7 +35,7 @@ CRYPTO_THREAD CRYPTO_THREAD_native_start(CRYPTO_THREAD_ROUTINE routine,
     handle->data = data;
     handle->routine = routine;
 
-    if (CRYPTO_THREAD_native_spawn(handle) != 1)
+    if (crypto_thread_native_spawn(handle) != 1)
         goto fail;
 
     return handle;
@@ -46,7 +46,7 @@ CRYPTO_THREAD CRYPTO_THREAD_native_start(CRYPTO_THREAD_ROUTINE routine,
     return NULL;
 }
 
-int CRYPTO_THREAD_native_clean(CRYPTO_THREAD handle)
+int crypto_thread_native_clean(CRYPTO_THREAD handle)
 {
     if (handle == NULL)
         return 0;

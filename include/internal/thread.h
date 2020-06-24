@@ -29,15 +29,15 @@ typedef struct crypto_thread_st {
     int joinable;
 } * CRYPTO_THREAD;
 
-CRYPTO_THREAD CRYPTO_THREAD_native_start(CRYPTO_THREAD_ROUTINE routine,
+CRYPTO_THREAD crypto_thread_native_start(CRYPTO_THREAD_ROUTINE routine,
                                          void *data, int joinable);
-int CRYPTO_THREAD_native_spawn(CRYPTO_THREAD thread);
-int CRYPTO_THREAD_native_join(CRYPTO_THREAD thread,
+int crypto_thread_native_spawn(CRYPTO_THREAD thread);
+int crypto_thread_native_join(CRYPTO_THREAD thread,
                               CRYPTO_THREAD_RETVAL *retval);
-int CRYPTO_THREAD_native_terminate(CRYPTO_THREAD thread);
-int CRYPTO_THREAD_native_exit();
-int CRYPTO_THREAD_native_is_self(CRYPTO_THREAD thread);
-int CRYPTO_THREAD_native_clean(CRYPTO_THREAD thread);
+int crypto_thread_native_terminate(CRYPTO_THREAD thread);
+int crypto_thread_native_exit();
+int crypto_thread_native_is_self(CRYPTO_THREAD thread);
+int crypto_thread_native_clean(CRYPTO_THREAD thread);
 
 # define CRYPTO_THREAD_NO_STATE   0UL
 # define CRYPTO_THREAD_AWAITING   1UL << 0

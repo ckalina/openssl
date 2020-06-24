@@ -205,16 +205,16 @@ static int test_thread_native(void)
 
     local = 1;
     fn1_glob = 0;
-    t = CRYPTO_THREAD_native_start(test_thread_native_fn, &local, 1);
+    t = crypto_thread_native_start(test_thread_native_fn, &local, 1);
 
     if (!TEST_int_eq(fn1_glob, 0))
         return 0;
 
-    CRYPTO_THREAD_native_join(t, &retval);
+    crypto_thread_native_join(t, &retval);
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_native_clean(t), 1))
+    if (!TEST_int_eq(crypto_thread_native_clean(t), 1))
         return 0;
 
     return 1;
@@ -228,13 +228,13 @@ static uint32_t test_thread_native_multiple_joins_fn1(void *data)
 
 static uint32_t test_thread_native_multiple_joins_fn2(void *data)
 {
-    CRYPTO_THREAD_native_join((CRYPTO_THREAD)data, NULL);
+    crypto_thread_native_join((CRYPTO_THREAD)data, NULL);
     return 0;
 }
 
 static uint32_t test_thread_native_multiple_joins_fn3(void *data)
 {
-    CRYPTO_THREAD_native_join((CRYPTO_THREAD)data, NULL);
+    crypto_thread_native_join((CRYPTO_THREAD)data, NULL);
     return 0;
 }
 
@@ -242,25 +242,25 @@ static int test_thread_native_multiple_joins(void)
 {
     CRYPTO_THREAD t, t1, t2;
 
-    t = CRYPTO_THREAD_native_start(test_thread_native_multiple_joins_fn1, NULL, 1);
-    t1 = CRYPTO_THREAD_native_start(test_thread_native_multiple_joins_fn2, t, 1);
-    t2 = CRYPTO_THREAD_native_start(test_thread_native_multiple_joins_fn3, t, 1);
+    t = crypto_thread_native_start(test_thread_native_multiple_joins_fn1, NULL, 1);
+    t1 = crypto_thread_native_start(test_thread_native_multiple_joins_fn2, t, 1);
+    t2 = crypto_thread_native_start(test_thread_native_multiple_joins_fn3, t, 1);
 
     if (!TEST_ptr(t) || !TEST_ptr(t1) || !TEST_ptr(t2))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_native_join(t2, NULL), 1))
+    if (!TEST_int_eq(crypto_thread_native_join(t2, NULL), 1))
         return 0;
-    if (!TEST_int_eq(CRYPTO_THREAD_native_join(t1, NULL), 1))
-        return 0;
-
-    if (!TEST_int_eq(CRYPTO_THREAD_native_clean(t2),1))
+    if (!TEST_int_eq(crypto_thread_native_join(t1, NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_native_clean(t1),1))
+    if (!TEST_int_eq(crypto_thread_native_clean(t2),1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_native_clean(t),1))
+    if (!TEST_int_eq(crypto_thread_native_clean(t1),1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_native_clean(t),1))
         return 0;
 
     return 1;
@@ -280,7 +280,7 @@ static int test_thread_enablement(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 0), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL),0))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL),0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 1))
@@ -307,19 +307,19 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 1), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 2), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), -1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -328,13 +328,13 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), -1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -344,11 +344,11 @@ static int test_thread_spawn(void)
 
     local = 2;
     retval = 0;
-    task = CRYPTO_THREAD_start(NULL, test_thread_native_fn, &local);
+    task = crypto_thread_start(NULL, test_thread_native_fn, &local);
     if (!TEST_ptr(task))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task, &retval),1))
@@ -357,18 +357,18 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_clean(NULL,task),1))
+    if (!TEST_int_eq(crypto_thread_clean(NULL,task),1))
         return 0;
 
     /* this will test an internally spawned thread */
 
     local = 3;
     retval = 0;
-    task = CRYPTO_THREAD_start(NULL, test_thread_native_fn, &local);
+    task = crypto_thread_start(NULL, test_thread_native_fn, &local);
     if (!TEST_ptr(task))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task, &retval),1))
@@ -401,7 +401,7 @@ static int test_thread_spawn_policy(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 2), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, NULL), 1))
@@ -411,31 +411,31 @@ static int test_thread_spawn_policy(void)
         return 0;
 
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 4))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 4))
         return 0;
 
     local = 2;
     retval = 0;
-    task1 = CRYPTO_THREAD_start(NULL, test_thread_native_fn, &local);
-    task2 = CRYPTO_THREAD_start(NULL, test_thread_native_fn, &local);
-    task3 = CRYPTO_THREAD_start(NULL, test_thread_native_fn, &local);
+    task1 = crypto_thread_start(NULL, test_thread_native_fn, &local);
+    task2 = crypto_thread_start(NULL, test_thread_native_fn, &local);
+    task3 = crypto_thread_start(NULL, test_thread_native_fn, &local);
     if (!TEST_ptr(task1) || !TEST_ptr(task2) || !TEST_ptr(task3))
         return 0;
 
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task1, &retval),1))
+    if (!TEST_int_eq(crypto_thread_join(NULL, task1, &retval),1))
         return 0;
-    if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task2, &retval),1))
+    if (!TEST_int_eq(crypto_thread_join(NULL, task2, &retval),1))
         return 0;
-    if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task3, &retval),1))
+    if (!TEST_int_eq(crypto_thread_join(NULL, task3, &retval),1))
         return 0;
-    if (!TEST_int_eq(CRYPTO_THREAD_clean(NULL,NULL),1))
+    if (!TEST_int_eq(crypto_thread_clean(NULL,NULL),1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_disable(NULL), 1))

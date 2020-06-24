@@ -111,7 +111,7 @@ CRYPTO_WORKER_CMD worker_internal_cb(OPENSSL_CTX *ctx, size_t queued_tasks)
     if (tdata == NULL)
         return CRYPTO_WORKER_TERMINATE;
 
-    if (OPENSSL_CTX_THREADS_all_busy(tdata))
+    if (openssl_ctx_threads_all_busy(tdata))
         if (list_size(&tdata->tasks.queue) > 0)
             return CRYPTO_WORKER_POLL;
 

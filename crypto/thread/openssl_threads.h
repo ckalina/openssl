@@ -43,13 +43,13 @@ typedef struct openssl_threads_st {
     openssl_ctx_get_data(CTX, OPENSSL_CTX_THREAD_INDEX,                 \
                          &openssl_threads_method);
 
-static inline int OPENSSL_CTX_THREADS_all_busy(OPENSSL_CTX_THREADS t)
+static inline int openssl_ctx_threads_all_busy(OPENSSL_CTX_THREADS t)
 {
     return list_size(&t->workers.available) == 0 &&
         t->threads.cap-list_size(&t->threads.active) == 0;
 }
 
-static inline int OPENSSL_CTX_THREADS_can_spawn_thread(OPENSSL_CTX_THREADS t)
+static inline int openssl_ctx_threads_can_spawn_thread(OPENSSL_CTX_THREADS t)
 {
     if (list_size(&t->workers.available) > 0)
         return 0;

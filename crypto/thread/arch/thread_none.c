@@ -21,26 +21,26 @@
 
 # include <internal/thread.h>
 
-int CRYPTO_THREAD_native_create(CRYPTO_THREAD thread)
+int crypto_thread_native_create(CRYPTO_THREAD thread)
 {
     (void)thread;
     return 0;
 }
 
-int CRYPTO_THREAD_native_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL *retval)
+int crypto_thread_native_join(CRYPTO_THREAD thread, CRYPTO_THREAD_RETVAL *retval)
 {
     (void)thread;
     (void)retval;
     return 0;
 }
 
-int CRYPTO_THREAD_native_terminate(CRYPTO_THREAD thread)
+int crypto_thread_native_terminate(CRYPTO_THREAD thread)
 {
     (void) thread;
     return 0;
 }
 
-int CRYPTO_THREAD_native_exit()
+int crypto_thread_native_exit()
 {
     return 0;
 }

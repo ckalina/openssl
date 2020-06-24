@@ -18,12 +18,12 @@
 #  include <internal/cryptlib.h>
 #  include <internal/thread.h>
 
-size_t CRYPTO_THREAD_get_available_threads(OPENSSL_CTX *ctx);
-void* CRYPTO_THREAD_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
+size_t crypto_thread_get_available_threads(OPENSSL_CTX *ctx);
+void* crypto_thread_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
                           void *data);
-int CRYPTO_THREAD_join(OPENSSL_CTX *ctx, void* task,
+int crypto_thread_join(OPENSSL_CTX *ctx, void* task,
                        CRYPTO_THREAD_RETVAL *retval);
-int CRYPTO_THREAD_clean(OPENSSL_CTX *ctx, void *task);
+int crypto_thread_clean(OPENSSL_CTX *ctx, void *task);
 
 # endif /* defined(OPENSSL_THREADS) */
 #endif /* OPENSSL_INTERNAL_WORKER_H */

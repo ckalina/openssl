@@ -28,8 +28,8 @@ typedef struct crypto_task_st {
     int finished;
 } * CRYPTO_TASK;
 
-CRYPTO_TASK CRYPTO_TASK_new(CRYPTO_THREAD_ROUTINE start, void *data);
-void CRYPTO_TASK_clean(CRYPTO_TASK t);
+CRYPTO_TASK crypto_task_new(CRYPTO_THREAD_ROUTINE start, void *data);
+void crypto_task_clean(CRYPTO_TASK t);
 
 # endif /* defined(OPENSSL_THREADS) */
 #endif /* OPENSSL_CRYPTO_TASK_H */

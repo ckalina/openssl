@@ -12,7 +12,7 @@
 
 # include "task.h"
 
-CRYPTO_TASK CRYPTO_TASK_new(CRYPTO_THREAD_ROUTINE start, void *data)
+CRYPTO_TASK crypto_task_new(CRYPTO_THREAD_ROUTINE start, void *data)
 {
     struct crypto_task_st *t;
 
@@ -43,7 +43,7 @@ CRYPTO_TASK CRYPTO_TASK_new(CRYPTO_THREAD_ROUTINE start, void *data)
     return NULL;
 }
 
-void CRYPTO_TASK_clean(CRYPTO_TASK t)
+void crypto_task_clean(CRYPTO_TASK t)
 {
     if (t == NULL)
         return;

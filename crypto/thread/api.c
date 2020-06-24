@@ -56,27 +56,27 @@ int CRYPTO_THREAD_disable(OPENSSL_CTX *ctx)
 
     list_for_each_safe(iter, tmp, &tdata->workers.available) {
         worker = container_of(iter, struct crypto_worker_st, list);
-        CRYPTO_THREAD_native_terminate(worker->handle);
-        CRYPTO_THREAD_native_clean(worker->handle);
+        crypto_thread_native_terminate(worker->handle);
+        crypto_thread_native_clean(worker->handle);
         list_del(iter);
         OPENSSL_free(worker);
     }
     list_for_each_safe(iter, tmp, &tdata->workers.busy) {
         worker = container_of(iter, struct crypto_worker_st, list);
-        CRYPTO_THREAD_native_terminate(worker->handle);
-        CRYPTO_THREAD_native_clean(worker->handle);
+        crypto_thread_native_terminate(worker->handle);
+        crypto_thread_native_clean(worker->handle);
         list_del(iter);
         OPENSSL_free(worker);
     }
     list_for_each_safe(iter, tmp, &tdata->threads.active) {
         worker = container_of(iter, struct crypto_worker_st, list);
-        CRYPTO_THREAD_native_terminate(worker->handle);
-        CRYPTO_THREAD_native_clean(worker->handle);
+        crypto_thread_native_terminate(worker->handle);
+        crypto_thread_native_clean(worker->handle);
         list_del(iter);
         OPENSSL_free(worker);
     }
     CRYPTO_MUTEX_unlock(tdata->lock);
-    CRYPTO_THREAD_clean(ctx, NULL);
+    crypto_thread_clean(ctx, NULL);
     return 1;
 }
 
@@ -95,7 +95,7 @@ int CRYPTO_THREAD_cap(OPENSSL_CTX *ctx, int max_threads)
     return 1;
 }
 
-size_t CRYPTO_THREAD_get_available_threads(OPENSSL_CTX *ctx)
+size_t crypto_thread_get_available_threads(OPENSSL_CTX *ctx)
 {
     OPENSSL_CTX_THREADS t;
 
@@ -113,7 +113,7 @@ size_t CRYPTO_THREAD_get_available_threads(OPENSSL_CTX *ctx)
         list_size(&t->workers.available);
 }
 
-static int CRYPTO_THREAD_spawn_worker_task(OPENSSL_CTX *ctx,
+static int crypto_thread_spawn_worker_task(OPENSSL_CTX *ctx,
                                            CRYPTO_WORKER_CALLBACK cb,
                                            void *vtask)
 {
@@ -135,15 +135,15 @@ static int CRYPTO_THREAD_spawn_worker_task(OPENSSL_CTX *ctx,
     if (vtask != NULL)
         list_add_tail(&worker->list, &tdata->threads.active);
 
-    available_threads = CRYPTO_THREAD_get_available_threads(ctx);
-    worker->handle = CRYPTO_THREAD_native_start(worker_main, (void*)worker, 0);
+    available_threads = crypto_thread_get_available_threads(ctx);
+    worker->handle = crypto_thread_native_start(worker_main, (void*)worker, 0);
     if (worker->handle == NULL) {
         list_del(&worker->list);
         goto fail;
     }
 
     while (vtask == NULL &&
-           CRYPTO_THREAD_get_available_threads(ctx) == available_threads)
+           crypto_thread_get_available_threads(ctx) == available_threads)
         ossl_sleep(500);
 
     return 1;
@@ -155,10 +155,10 @@ static int CRYPTO_THREAD_spawn_worker_task(OPENSSL_CTX *ctx,
 
 int CRYPTO_THREAD_spawn_worker(OPENSSL_CTX *ctx, CRYPTO_WORKER_CALLBACK cb)
 {
-    return CRYPTO_THREAD_spawn_worker_task(ctx, cb, NULL);
+    return crypto_thread_spawn_worker_task(ctx, cb, NULL);
 }
 
-void *CRYPTO_THREAD_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
+void *crypto_thread_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
                           void *data)
 {
     int queue_task;
@@ -174,15 +174,15 @@ void *CRYPTO_THREAD_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
     if (tdata->enabled == 0)
         return 0;
 
-    t = CRYPTO_TASK_new(start, data);
+    t = crypto_task_new(start, data);
     if (t == NULL)
         return NULL;
 
     CRYPTO_MUTEX_lock(tdata->lock);
-    available_threads = CRYPTO_THREAD_get_available_threads(ctx);
-    if (OPENSSL_CTX_THREADS_can_spawn_thread(tdata)) {
+    available_threads = crypto_thread_get_available_threads(ctx);
+    if (openssl_ctx_threads_can_spawn_thread(tdata)) {
         list_add_tail(&t->list, &tdata->tasks.active);
-        if (CRYPTO_THREAD_spawn_worker_task(ctx, worker_internal_cb, t) == 1)
+        if (crypto_thread_spawn_worker_task(ctx, worker_internal_cb, t) == 1)
             queue_task = 0;
         else
             list_del(&t->list);
@@ -193,7 +193,7 @@ void *CRYPTO_THREAD_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
         CRYPTO_MUTEX_unlock(tdata->lock);
 
         if (available_threads > 0)
-            while (CRYPTO_THREAD_get_available_threads(ctx) == available_threads) {
+            while (crypto_thread_get_available_threads(ctx) == available_threads) {
                 ossl_sleep(500);
             }
     } else
@@ -202,7 +202,7 @@ void *CRYPTO_THREAD_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
     return (void*) t;
 }
 
-int CRYPTO_THREAD_join(OPENSSL_CTX *ctx, void *vtask,
+int crypto_thread_join(OPENSSL_CTX *ctx, void *vtask,
                        CRYPTO_THREAD_RETVAL *retval)
 {
     CRYPTO_TASK task;
@@ -224,7 +224,7 @@ int CRYPTO_THREAD_join(OPENSSL_CTX *ctx, void *vtask,
     return 1;
 }
 
-int CRYPTO_THREAD_clean(OPENSSL_CTX *ctx, void *vtask)
+int crypto_thread_clean(OPENSSL_CTX *ctx, void *vtask)
 {
     CRYPTO_TASK task;
     OPENSSL_CTX_THREADS tdata;
@@ -240,7 +240,7 @@ int CRYPTO_THREAD_clean(OPENSSL_CTX *ctx, void *vtask)
 
     list_for_each_safe(iter, tmp, &tdata->workers.terminated) {
         worker = container_of(iter, struct crypto_worker_st, list);
-        if (CRYPTO_THREAD_native_clean(worker->handle) == 0)
+        if (crypto_thread_native_clean(worker->handle) == 0)
             continue;
         list_del(iter);
         OPENSSL_free(worker);
@@ -250,11 +250,11 @@ int CRYPTO_THREAD_clean(OPENSSL_CTX *ctx, void *vtask)
         list_for_each_safe(iter, tmp, &tdata->tasks.done) {
             task = container_of(iter, struct crypto_task_st, list);
             list_del(iter);
-            CRYPTO_TASK_clean(task);
+            crypto_task_clean(task);
         }
     } else {
         list_del(&task->list);
-        CRYPTO_TASK_clean(task);
+        crypto_task_clean(task);
     }
 
     CRYPTO_MUTEX_unlock(tdata->lock);
