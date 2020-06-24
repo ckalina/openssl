@@ -153,6 +153,7 @@ static int crypto_signal_arch_block(CRYPTO_SIGNAL *p)
 
 int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
 {
+    struct list *l;
     struct sigentry *s = NULL;
 
     if (siglist.prev == NULL || siglist.next == NULL)
@@ -164,8 +165,8 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
         else if (crypto_signal_arch_enable() == 0)
             return 0;
     } else {
-        struct list *l;
-        if ((l = list_find(&siglist, siglist_sigeq, (void*)&p->signal)) != NULL)
+        l = list_find(&siglist, siglist_sigeq, (void*)&p->signal);
+        if (l != NULL)
             s = container_of(l, struct sigentry, list);
     }
 
