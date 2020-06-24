@@ -24,6 +24,8 @@ details.
 To mask multiple signals, pass a NULL-terminated array to
 B<CRYPTO_SIGNAL_block_set>.
 
+On Windows, this is restricted to applications using the Console API.
+
 =head1 RETURN VALUES
 
 All functions return 1 on success, 0 otherwise. On unsupported platforms 0 is
