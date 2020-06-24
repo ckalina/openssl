@@ -300,7 +300,7 @@ static int test_thread_enablement(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 0), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 1))
@@ -317,7 +317,7 @@ static int test_thread_enablement(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(custom_ctx, 0), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 1))
@@ -374,16 +374,16 @@ static int test_thread_worker_cb(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, cb_three_tasks), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     /* test a callback on a single tasks, worker should remain active */
@@ -393,7 +393,7 @@ static int test_thread_worker_cb(void)
     if (!TEST_ptr(task0))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     retval = 0;
@@ -415,14 +415,14 @@ static int test_thread_worker_cb(void)
     if (!TEST_ptr(task2))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     retval = 0;
     if (!TEST_int_eq(crypto_thread_join(NULL, task1, &retval), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local1))
@@ -432,7 +432,7 @@ static int test_thread_worker_cb(void)
     if (!TEST_int_eq(crypto_thread_join(NULL, task2, &retval), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local2))
@@ -475,28 +475,28 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 2), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 2))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), -1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -505,19 +505,19 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 2))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), -1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -531,10 +531,10 @@ static int test_thread_spawn(void)
     if (!TEST_ptr(task))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(crypto_thread_join(NULL, task, &retval),1))
@@ -554,10 +554,10 @@ static int test_thread_spawn(void)
     if (!TEST_ptr(task))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 0))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(crypto_thread_join(NULL, task, &retval),1))
@@ -592,7 +592,7 @@ static int test_thread_spawn_policy(void)
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 2), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, NULL), 1))
@@ -602,7 +602,7 @@ static int test_thread_spawn_policy(void)
         return 0;
 
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 4))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 4))
         return 0;
 
     local = 2;
@@ -614,7 +614,7 @@ static int test_thread_spawn_policy(void)
         return 0;
 
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 1))
         return 0;
 
     if (!TEST_int_eq(crypto_thread_join(NULL, task1, &retval),1))
@@ -626,7 +626,7 @@ static int test_thread_spawn_policy(void)
     if (!TEST_int_eq(crypto_thread_clean(NULL,NULL),1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
+    if (!TEST_int_eq(crypto_thread_num_available_threads(NULL), 2))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_disable(NULL), 1))

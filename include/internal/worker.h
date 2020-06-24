@@ -18,7 +18,7 @@
 #  include <internal/cryptlib.h>
 #  include <internal/thread.h>
 
-size_t crypto_thread_get_available_threads(OPENSSL_CTX *ctx);
+size_t crypto_thread_num_available_threads(OPENSSL_CTX *ctx);
 void* crypto_thread_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
                           void *data);
 int crypto_thread_join(OPENSSL_CTX *ctx, void* task,

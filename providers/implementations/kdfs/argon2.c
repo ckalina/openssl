@@ -704,7 +704,7 @@ static int validate_inputs(const ARGON2_CTX *ctx)
     if (ctx->threads > 1 && CRYPTO_THREAD_enabled(ctx->openssl_ctx) != 1)
         return 0;
     if (ctx->threads > 1 && ctx->threads >
-            crypto_thread_get_available_threads(ctx->openssl_ctx))
+            crypto_thread_num_available_threads(ctx->openssl_ctx))
         return 0;
 #else
     if (ctx->threads != 1)

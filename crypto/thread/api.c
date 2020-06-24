@@ -95,7 +95,7 @@ int CRYPTO_THREAD_cap(OPENSSL_CTX *ctx, int max_threads)
     return 1;
 }
 
-size_t crypto_thread_get_available_threads(OPENSSL_CTX *ctx)
+size_t crypto_thread_num_available_threads(OPENSSL_CTX *ctx)
 {
     OPENSSL_CTX_THREADS t;
 
@@ -135,7 +135,7 @@ static int crypto_thread_spawn_worker_task(OPENSSL_CTX *ctx,
     if (vtask != NULL)
         list_add_tail(&worker->list, &tdata->threads.active);
 
-    available_threads = crypto_thread_get_available_threads(ctx);
+    available_threads = crypto_thread_num_available_threads(ctx);
     worker->handle = crypto_thread_native_start(worker_main, (void*)worker, 0);
     if (worker->handle == NULL) {
         list_del(&worker->list);
@@ -143,7 +143,7 @@ static int crypto_thread_spawn_worker_task(OPENSSL_CTX *ctx,
     }
 
     while (vtask == NULL &&
-           crypto_thread_get_available_threads(ctx) == available_threads)
+           crypto_thread_num_available_threads(ctx) == available_threads)
         ossl_sleep(500);
 
     return 1;
@@ -179,7 +179,7 @@ void *crypto_thread_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
         return NULL;
 
     CRYPTO_MUTEX_lock(tdata->lock);
-    available_threads = crypto_thread_get_available_threads(ctx);
+    available_threads = crypto_thread_num_available_threads(ctx);
     if (openssl_ctx_threads_can_spawn_thread(tdata)) {
         list_add_tail(&t->list, &tdata->tasks.active);
         if (crypto_thread_spawn_worker_task(ctx, worker_internal_cb, t) == 1)
@@ -193,7 +193,7 @@ void *crypto_thread_start(OPENSSL_CTX *ctx, CRYPTO_THREAD_ROUTINE start,
         CRYPTO_MUTEX_unlock(tdata->lock);
 
         if (available_threads > 0)
-            while (crypto_thread_get_available_threads(ctx) == available_threads) {
+            while (crypto_thread_num_available_threads(ctx) == available_threads) {
                 ossl_sleep(500);
             }
     } else
