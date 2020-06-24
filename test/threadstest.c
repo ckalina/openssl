@@ -192,7 +192,7 @@ static int test_thread_local(void)
 static uint32_t fn1_glob;
 static uint32_t test_thread_native_fn(void *data)
 {
-    ossl_sleep(10000);
+    ossl_sleep(5000);
     fn1_glob = *(uint32_t*)data;
     return 2;
 }
