@@ -102,7 +102,7 @@ static int crypto_signal_arch_block(CRYPTO_SIGNAL *p)
     memset(&sa, 0, sizeof(struct sigaction));
     sa.sa_handler = p->callback;
 
-    if (sigemptyset (&sa.sa_mask) != 0)
+    if (sigemptyset(&sa.sa_mask) != 0)
         goto fail;
 
     if (sigaction((int)p->signal, &sa, NULL) != 0)
