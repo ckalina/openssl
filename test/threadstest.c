@@ -268,46 +268,217 @@ static int test_thread_native_multiple_joins(void)
 
 static int test_thread_enablement(void)
 {
+    void *task;
+    OPENSSL_CTX *custom_ctx;
+
+    custom_ctx = OPENSSL_CTX_new();
+    if (!TEST_ptr(custom_ctx))
+        return 0;
+
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 0))
         return 0;
 
-    if (!TEST_ptr_null(CRYPTO_THREAD_start(NULL, test_thread_native_fn, NULL)))
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
+    task = crypto_thread_start(NULL, test_thread_native_fn, NULL);
+    if (!TEST_ptr_null(task))
+        return 0;
+
+    task = crypto_thread_start(custom_ctx, test_thread_native_fn, NULL);
+    if (!TEST_ptr_null(task))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, NULL), 0))
         return 0;
 
+    if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(custom_ctx, NULL), 0))
+        return 0;
+
+    /* enable threading for the default context only */
+
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 0), 1))
         return 0;
 
-    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL),0))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 1))
         return 0;
 
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
     if (!TEST_int_eq(CRYPTO_THREAD_disable(NULL), 1))
+        return 0;
+
+    /* enable threading for the custom context only */
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enable(custom_ctx, 0), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 0))
         return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_disable(custom_ctx), 1))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
+    OPENSSL_CTX_free(custom_ctx);
+
+    return 1;
+}
+
+CRYPTO_WORKER_CMD cb_three_tasks(OPENSSL_CTX *ctx, size_t jobs)
+{
+    static uint8_t terminate_after_jobs = 3;
+
+    if (--terminate_after_jobs > 0)
+        return CRYPTO_WORKER_POLL;
+    
+    return CRYPTO_WORKER_TERMINATE;
+}
+
+static int test_thread_worker_cb(void)
+{
+    void *task0;
+    void *task1;
+    void *task2;
+    uint32_t local0;
+    uint32_t local1;
+    uint32_t local2;
+    uint32_t retval;
+    OPENSSL_CTX *custom_ctx;
+
+    custom_ctx = OPENSSL_CTX_new();
+    if (!TEST_ptr(custom_ctx))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 0))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 0), 1))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_spawn_worker(NULL, cb_three_tasks), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
+    /* test a callback on a single tasks, worker should remain active */
+
+    local0 = 0;
+    task0 = crypto_thread_start(NULL, test_thread_native_fn, &local1);
+    if (!TEST_ptr(task0))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+        return 0;
+
+    retval = 0;
+    if (!TEST_int_eq(crypto_thread_join(NULL, task0, &retval), 1))
+        return 0;
+
+    if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local0))
+        return 0;
+
+    /* test a callback on multiple tasks, worker should terminate */
+
+    local1 = 1;
+    task1 = crypto_thread_start(NULL, test_thread_native_fn, &local1);
+    if (!TEST_ptr(task1))
+        return 0;
+
+    local2 = 2;
+    task2 = crypto_thread_start(NULL, test_thread_native_fn, &local2);
+    if (!TEST_ptr(task2))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+        return 0;
+
+    retval = 0;
+    if (!TEST_int_eq(crypto_thread_join(NULL, task1, &retval), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+        return 0;
+
+    if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local1))
+        return 0;
+
+    retval = 0;
+    if (!TEST_int_eq(crypto_thread_join(NULL, task2, &retval), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
+        return 0;
+
+    if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local2))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_clean(NULL, task1),1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_clean(NULL, task2),1))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_disable(NULL), 1))
+        return 0;
+
+    OPENSSL_CTX_free(custom_ctx);
 
     return 1;
 }
 
 static int test_thread_spawn(void)
 {
+    void *task;
     uint32_t local;
     uint32_t retval;
-    void *task;
+    OPENSSL_CTX *custom_ctx;
+
+    custom_ctx = OPENSSL_CTX_new();
+    if (!TEST_ptr(custom_ctx))
+        return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 0))
+        return 0;
+
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_enable(NULL, 1), 1))
         return 0;
 
+    if (!TEST_int_eq(CRYPTO_THREAD_enabled(custom_ctx), 0))
+        return 0;
+
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 2), 1))
@@ -316,10 +487,16 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -331,10 +508,16 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 2))
         return 0;
 
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, -1), 1))
         return 0;
 
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), -1))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_cap(NULL, 1), 1))
@@ -351,7 +534,10 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 1))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task, &retval),1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_join(NULL, task, &retval),1))
         return 0;
 
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local))
@@ -371,13 +557,16 @@ static int test_thread_spawn(void)
     if (!TEST_int_eq(crypto_thread_get_available_threads(NULL), 0))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_join(NULL, task, &retval),1))
+    if (!TEST_int_eq(crypto_thread_get_available_threads(custom_ctx), 0))
+        return 0;
+
+    if (!TEST_int_eq(crypto_thread_join(NULL, task, &retval),1))
         return 0;
 
     if (!TEST_int_eq(retval, 2) || !TEST_int_eq(fn1_glob, local))
         return 0;
 
-    if (!TEST_int_eq(CRYPTO_THREAD_clean(NULL,task),1))
+    if (!TEST_int_eq(crypto_thread_clean(NULL,task),1))
         return 0;
 
     if (!TEST_int_eq(CRYPTO_THREAD_disable(NULL), 1))
@@ -385,6 +574,8 @@ static int test_thread_spawn(void)
 
     if (!TEST_int_eq(CRYPTO_THREAD_enabled(NULL), 0))
         return 0;
+
+    OPENSSL_CTX_free(custom_ctx);
 
     return 1;
 }
@@ -458,6 +649,7 @@ int setup_tests(void)
     ADD_TEST(test_thread_native);
     ADD_TEST(test_thread_native_multiple_joins);
     ADD_TEST(test_thread_enablement);
+    ADD_TEST(test_thread_worker_cb);
     ADD_TEST(test_thread_spawn);
     ADD_TEST(test_thread_spawn_policy);
 #endif
