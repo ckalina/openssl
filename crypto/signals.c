@@ -35,10 +35,11 @@ volatile PHANDLER_ROUTINE callback_handler = NULL;
 
 static BOOL WINAPI crypto_signal_handler(DWORD dwType)
 {
+    struct list *l;
+
     if (list_empty(&siglist))
         return FALSE;
 
-    struct list *l;
     if ((l = list_find(&siglist, siglist_sigeq, (void*)&dwType)) == NULL)
         return FALSE;
 
