@@ -65,9 +65,8 @@ static CRYPTO_TASK worker_poll_task(OPENSSL_CTX_THREADS tdata, CRYPTO_WORKER wor
     CRYPTO_MUTEX_lock(tdata->lock);
     list_add_tail(&worker->list, &tdata->workers.available);
 
-    while (list_empty(&tdata->tasks.queue) == 1){
+    while (list_empty(&tdata->tasks.queue) == 1)
         CRYPTO_CONDVAR_wait(tdata->tasks.cond_create, tdata->lock);
-    }
 
     task = worker_pick_task(tdata, worker);
     CRYPTO_MUTEX_unlock(tdata->lock);
