@@ -569,7 +569,7 @@ static int fill_mem_blocks_mt(ARGON2_CTX *ctx) {
             for (l = 0; l < ctx->lanes; ++l) {
                 ARGON2_POS p;
                 if (l >= ctx->threads)
-                    if (CRYPTO_THREAD_join(ctx->openssl_ctx, t[l - ctx->threads],
+                    if (crypto_thread_join(ctx->openssl_ctx, t[l - ctx->threads],
                                            NULL) == 0)
                         goto fail;
 
@@ -580,24 +580,24 @@ static int fill_mem_blocks_mt(ARGON2_CTX *ctx) {
 
                 t_data[l].ctx = ctx;
                 memcpy(&(t_data[l].pos), &p, sizeof(ARGON2_POS));
-                t[l] = CRYPTO_THREAD_start(ctx->openssl_ctx, &fill_segment_thr,
+                t[l] = crypto_thread_start(ctx->openssl_ctx, &fill_segment_thr,
                                            (void*) &t_data[l]);
                 if (t[l] == NULL) {
                     for (ll = 0; ll < l; ++ll)
-                        CRYPTO_THREAD_join(ctx->openssl_ctx, t[ll], NULL);
+                        crypto_thread_join(ctx->openssl_ctx, t[ll], NULL);
                     t[ll] = NULL;
                     goto fail;
                 }
             }
             for (l = ctx->lanes - ctx->threads; l < ctx->lanes; ++l) {
-                if (CRYPTO_THREAD_join(ctx->openssl_ctx, t[l], NULL) == 0)
+                if (crypto_thread_join(ctx->openssl_ctx, t[l], NULL) == 0)
                     goto fail;
                 t[l] = NULL;
             }
         }
     }
 
-    CRYPTO_THREAD_clean(ctx->openssl_ctx, NULL);
+    crypto_thread_clean(ctx->openssl_ctx, NULL);
 
     OPENSSL_free(t_data);
     OPENSSL_free(t);
@@ -704,7 +704,7 @@ static int validate_inputs(const ARGON2_CTX *ctx)
     if (ctx->threads > 1 && CRYPTO_THREAD_enabled(ctx->openssl_ctx) != 1)
         return 0;
     if (ctx->threads > 1 && ctx->threads >
-            CRYPTO_THREAD_get_available_threads(ctx->openssl_ctx))
+            crypto_thread_get_available_threads(ctx->openssl_ctx))
         return 0;
 #else
     if (ctx->threads != 1)
