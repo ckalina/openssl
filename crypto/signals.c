@@ -168,7 +168,7 @@ int CRYPTO_SIGNAL_block(CRYPTO_SIGNAL *p)
             s = container_of(l, struct sigentry, list);
     }
 
-    if (s && p->callback == NULL) {
+    if (s != NULL && p->callback == NULL) {
         list_del(&s->list);
         OPENSSL_free(s);
         if (list_empty(&siglist) && crypto_signal_arch_disable() == 0)
