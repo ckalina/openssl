@@ -1,4 +1,5 @@
 ---
 seq:
     - seq: *thread*
+    - seq: *kdf*
     - par: **
